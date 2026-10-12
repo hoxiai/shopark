@@ -31,14 +31,14 @@ fi
 # 2. 参数解析与默认值
 VERSION=""
 IMAGE_NAME="${IMAGE_NAME:-hoxiai/shoply}"
-if [ -z "$SHOPLY_BASE_IMAGE" ]; then
-    if $ENGINE image inspect shoply-base:latest >/dev/null 2>&1; then
-        BASE_IMAGE="shoply-base:latest"
-    else
-        BASE_IMAGE="registry.cn-hangzhou.aliyuncs.com/hoxiai/shoply-base:latest"
-    fi
+# 运行环境在 Dockerfile 的 runtime 阶段构建（首次需编译 PHP 扩展，之后命中缓存）。
+# apk 源：SHOPLY_APK_MIRROR 显式指定（设为空字符串即官方源）；未设置时东八区默认阿里云。
+if [ -n "${SHOPLY_APK_MIRROR+set}" ]; then
+    APK_MIRROR="$SHOPLY_APK_MIRROR"
+elif [ "$(date +%z 2>/dev/null)" = "+0800" ]; then
+    APK_MIRROR="https://mirrors.aliyun.com"
 else
-    BASE_IMAGE="$SHOPLY_BASE_IMAGE"
+    APK_MIRROR=""
 fi
 PLATFORM="${SHOPLY_PLATFORM:-linux/amd64}"
 REGISTRY="${SHOPLY_REGISTRY:-crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com}"
@@ -67,7 +67,7 @@ echo "  Shoply 容器镜像构建"
 echo "  容器引擎: $ENGINE"
 echo "  镜像版本: $VERSION"
 echo "  目标平台: $PLATFORM"
-echo "  基础镜像: $BASE_IMAGE"
+echo "  apk 源:   ${APK_MIRROR:-官方源}"
 if [ -n "$SHOPLY_MIRROR" ]; then
     echo "  指定源:   $SHOPLY_MIRROR"
 fi
@@ -322,8 +322,7 @@ fi
 echo "[Shoply] 开始构建镜像 (SHOPLY_BINARY=$SHOPLY_BIN, PREPARE=$SHOPLY_PREPARE_BIN)..."
 $ENGINE build \
     --platform "$PLATFORM" \
-    --build-arg SHOPLY_BASE_IMAGE="$BASE_IMAGE" \
-    --build-arg SHOPLY_PLATFORM="$PLATFORM" \
+    --build-arg APK_MIRROR="$APK_MIRROR" \
     --build-arg SHOPLY_BINARY="$SHOPLY_BIN" \
     --build-arg SHOPLY_PREPARE_BINARY="$SHOPLY_PREPARE_BIN" \
     -t "${IMAGE_NAME}:${VERSION}" \
