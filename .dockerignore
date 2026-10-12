@@ -17,9 +17,6 @@
 **/.vite
 **/.vite/**
 
-# 动态安装的业务应用与商业主题
-plugins/app/*
-!plugins/app/.gitkeep
 template/themes/*
 !template/themes/default/
 !template/themes/default/**

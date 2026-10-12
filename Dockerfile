@@ -25,8 +25,9 @@ COPY public ./public
 # 3. 复制容器入口脚本并赋权
 COPY --chmod=755 scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# 4. 预创建挂载与运行态目录
-RUN mkdir -p data config platform runtime tenant public/uploads plugins/app
+# 4. 创建挂载与运行态目录，并备份内置应用插件供宿主机挂载时自愈释放
+RUN mkdir -p data config platform runtime tenant public/uploads && \
+    cp -r plugins/app /var/www/shoply/.builtin-plugins-app
 
 EXPOSE 5490
 
