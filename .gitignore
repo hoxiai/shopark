@@ -1,0 +1,10 @@
+# 运行时数据与用户上传资产（运行后自动生成，严禁入库）
+.env
+data/
+runtime/
+public/uploads/
+config/conf.yaml
+*.log
+*.tar.gz
+*.zip
+.DS_Store

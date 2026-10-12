@@ -1,0 +1,80 @@
+services:
+  shoply:
+    image: ${SHOPLY_IMAGE_REGISTRY:-registry.cn-hangzhou.aliyuncs.com}/${SHOPLY_IMAGE_NAME:-hoxiai/shoply}:${SHOPLY_VERSION:-latest}
+    container_name: shoply-app
+    restart: unless-stopped
+    ports:
+      - "${SHOPLY_HTTP_PORT:-5490}:5490"
+    environment:
+      - SHOPLY_MODE=production
+      # 数据库连接
+      - SHOPLY_DB_DRIVER=${SHOPLY_DB_DRIVER:-mysql}
+      - SHOPLY_DB_HOST=${SHOPLY_DB_HOST:-mysql}
+      - SHOPLY_DB_PORT=${SHOPLY_DB_PORT:-3306}
+      - SHOPLY_DB_DATABASE=${SHOPLY_DB_DATABASE:-shoply}
+      - SHOPLY_DB_USERNAME=${SHOPLY_DB_USERNAME:-shoply}
+      - SHOPLY_DB_PASSWORD=${SHOPLY_DB_PASSWORD:?set SHOPLY_DB_PASSWORD in .env}
+      # Redis 缓存连接
+      - SHOPLY_REDIS_ADDR=${SHOPLY_REDIS_ADDR:-redis:6379}
+      - SHOPLY_REDIS_PASSWORD=${SHOPLY_REDIS_PASSWORD:?set SHOPLY_REDIS_PASSWORD in .env}
+      - SHOPLY_REDIS_DB=${SHOPLY_REDIS_DB:-0}
+      # 站点与初始管理员
+      - SHOPLY_STORE_NAME=${SHOPLY_STORE_NAME:-Shoply Store}
+      - SHOPLY_SITE_URL=${SHOPLY_SITE_URL:-http://localhost:5490}
+      - SHOPLY_SITE_EMAIL=${SHOPLY_SITE_EMAIL:-admin@shoply.id}
+      - SHOPLY_SITE_PASSWORD=${SHOPLY_SITE_PASSWORD:?set SHOPLY_SITE_PASSWORD in .env}
+      - SHOPLY_INIT_HTTP_PORT=:5490
+      - SHOPLY_JWT_SIGN_KEY=${SHOPLY_JWT_SIGN_KEY:?set SHOPLY_JWT_SIGN_KEY in .env}
+      - SHOPLY_JWT_SECRET_KEY=${SHOPLY_JWT_SECRET_KEY:?set SHOPLY_JWT_SECRET_KEY in .env}
+      - SHOPLY_JWT_ADMIN_PERMISSION_MODE=${SHOPLY_JWT_ADMIN_PERMISSION_MODE:-enforce}
+    volumes:
+      - ./data:/var/www/shoply/data:Z
+      - ./config:/var/www/shoply/config:Z
+      - ./public:/var/www/shoply/public:Z
+      - ./runtime:/var/www/shoply/runtime:Z
+      - ./data/theme-releases:/var/www/shoply/template/themes/.releases:Z
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    container_name: shoply-mysql
+    restart: unless-stopped
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SHOPLY_MYSQL_ROOT_PASSWORD:?set SHOPLY_MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${SHOPLY_DB_DATABASE:-shoply}
+      MYSQL_USER: ${SHOPLY_DB_USERNAME:-shoply}
+      MYSQL_PASSWORD: ${SHOPLY_DB_PASSWORD:?set SHOPLY_DB_PASSWORD in .env}
+    volumes:
+      - mysql_data:/var/lib/mysql:Z
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u \"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: shoply-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${SHOPLY_REDIS_PASSWORD:?set SHOPLY_REDIS_PASSWORD in .env}"]
+    environment:
+      REDISCLI_AUTH: ${SHOPLY_REDIS_PASSWORD:?set SHOPLY_REDIS_PASSWORD in .env}
+    volumes:
+      - redis_data:/data:Z
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  mysql_data:
+  redis_data:
