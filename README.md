@@ -33,10 +33,10 @@ Run the root helper script directly:
 > - **No existing services found**: Automatically spins up containerized MySQL 8.0 & Redis 7 with auto-generated secure credentials.
 > - For international deployments, switch `SHOPLY_IMAGE_REGISTRY=ghcr.io` in `.env` if desired.
 
-### 4. Access Shoply
+### 3. Access Shoply
 - **Storefront**: `http://localhost:5490`
 - **Admin Dashboard**: `http://localhost:5490/admin/`
-- **Default Account**: `admin@shoply.id` (password configured in `SHOPLY_SITE_PASSWORD`)
+- **Default Account**: `admin@shoply.page` (password entered during setup)
 
 ---
 

@@ -15,4 +15,4 @@ redisPass: ""
 redisDB: 0
 storeName: "Shoply Store"
 siteUrl: "http://localhost:5490/"
-email: "admin@shoply.id"
+email: "admin@shoply.page"

@@ -23,7 +23,7 @@ services:
       # 站点与初始管理员
       - SHOPLY_STORE_NAME=${SHOPLY_STORE_NAME:-Shoply Store}
       - SHOPLY_SITE_URL=${SHOPLY_SITE_URL:-http://localhost:5490}
-      - SHOPLY_SITE_EMAIL=${SHOPLY_SITE_EMAIL:-admin@shoply.id}
+      - SHOPLY_SITE_EMAIL=${SHOPLY_SITE_EMAIL:-admin@shoply.page}
       - SHOPLY_SITE_PASSWORD=${SHOPLY_SITE_PASSWORD:?set SHOPLY_SITE_PASSWORD in .env}
       - SHOPLY_INIT_HTTP_PORT=:5490
       - SHOPLY_JWT_SIGN_KEY=${SHOPLY_JWT_SIGN_KEY:?set SHOPLY_JWT_SIGN_KEY in .env}

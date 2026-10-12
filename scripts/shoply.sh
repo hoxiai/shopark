@@ -91,8 +91,7 @@ interactive_setup() {
                 db_name=${input_db:-shoply}
                 read -r -p "请输入 MySQL 用户名 [默认: root]: " input_user
                 db_user=${input_user:-root}
-                read -r -s -p "请输入 MySQL 密码: " input_pass
-                echo ""
+                read -r -p "请输入 MySQL 密码 [留空表示无密码]: " input_pass
                 db_pass=$input_pass
             else
                 db_pass="root"
@@ -105,13 +104,35 @@ interactive_setup() {
             echo "[Shoply] ✔️ 将连接宿主机 MySQL (${db_host}:${db_port}/${db_name})，跳过启动 MySQL 容器。"
         else
             echo "[Shoply] ✔️ 将在容器中独立启动 MySQL 8.0。"
-            db_pass=$(generate_secret 16)
-            mysql_root_pass=$(generate_secret 20)
+            if [ "$is_interactive" = true ]; then
+                read -r -p "请设置容器 MySQL 数据库密码 [留空自动生成随机强密码]: " input_db_pass
+                if [ -n "$input_db_pass" ]; then
+                    db_pass="$input_db_pass"
+                    mysql_root_pass="$input_db_pass"
+                else
+                    db_pass=$(generate_secret 16)
+                    mysql_root_pass=$(generate_secret 20)
+                fi
+            else
+                db_pass=$(generate_secret 16)
+                mysql_root_pass=$(generate_secret 20)
+            fi
         fi
     else
         echo "[Shoply] ℹ️ 未检测到宿主机 MySQL 3306 端口，将在容器中自动启动 MySQL 8.0。"
-        db_pass=$(generate_secret 16)
-        mysql_root_pass=$(generate_secret 20)
+        if [ "$is_interactive" = true ]; then
+            read -r -p "请设置容器 MySQL 数据库密码 [留空自动生成随机强密码]: " input_db_pass
+            if [ -n "$input_db_pass" ]; then
+                db_pass="$input_db_pass"
+                mysql_root_pass="$input_db_pass"
+            else
+                db_pass=$(generate_secret 16)
+                mysql_root_pass=$(generate_secret 20)
+            fi
+        else
+            db_pass=$(generate_secret 16)
+            mysql_root_pass=$(generate_secret 20)
+        fi
     fi
     echo ""
 
@@ -128,26 +149,52 @@ interactive_setup() {
             use_embedded_redis="false"
             redis_addr="host.docker.internal:6379"
             if [ "$is_interactive" = true ]; then
-                read -r -s -p "请输入 Redis 密码 (若无密码直接回车): " input_redis_pass
-                echo ""
+                read -r -p "请输入宿主机 Redis 访问密码 [若无密码直接回车]: " input_redis_pass
                 redis_pass=$input_redis_pass
             fi
             echo "[Shoply] ✔️ 将连接宿主机 Redis (${redis_addr})，跳过启动 Redis 容器。"
         else
             echo "[Shoply] ✔️ 将在容器中独立启动 Redis 7。"
-            redis_pass=$(generate_secret 16)
+            if [ "$is_interactive" = true ]; then
+                read -r -p "请设置容器 Redis 密码 [留空自动生成随机密码]: " input_redis_pass
+                if [ -n "$input_redis_pass" ]; then
+                    redis_pass="$input_redis_pass"
+                else
+                    redis_pass=$(generate_secret 16)
+                fi
+            else
+                redis_pass=$(generate_secret 16)
+            fi
         fi
     else
         echo "[Shoply] ℹ️ 未检测到宿主机 Redis 6379 端口，将在容器中自动启动 Redis 7。"
-        redis_pass=$(generate_secret 16)
+        if [ "$is_interactive" = true ]; then
+            read -r -p "请设置容器 Redis 密码 [留空自动生成随机密码]: " input_redis_pass
+            if [ -n "$input_redis_pass" ]; then
+                redis_pass="$input_redis_pass"
+            else
+                redis_pass=$(generate_secret 16)
+            fi
+        else
+            redis_pass=$(generate_secret 16)
+        fi
     fi
     echo ""
 
     # ------------------ 管理员账户与密钥 ------------------
-    local admin_pwd="Admin123456!"
+    local admin_pwd="AdminPassword123!"
     if [ "$is_interactive" = true ]; then
-        read -r -p "设置初始超级管理员密码 (登录名: admin@shoply.id) [默认: Admin123456!]: " input_admin_pwd
-        admin_pwd=${input_admin_pwd:-Admin123456!}
+        while true; do
+            read -r -p "请输入超级管理员登录密码 (登录邮箱: admin@shoply.page) [至少8位]: " input_admin_pwd
+            if [ -z "$input_admin_pwd" ]; then
+                echo "[Shoply] 提示: 密码不能为空，请输入管理员密码。"
+            elif [ ${#input_admin_pwd} -lt 8 ]; then
+                echo "[Shoply] 提示: 密码长度至少需要8位，请重新输入。"
+            else
+                admin_pwd="$input_admin_pwd"
+                break
+            fi
+        done
     fi
 
     local jwt_sign_key=$(generate_secret 24)
@@ -187,7 +234,7 @@ SHOPLY_REDIS_DB=0
 # 站点与超级管理员
 SHOPLY_STORE_NAME=Shoply Store
 SHOPLY_SITE_URL=http://localhost:5490
-SHOPLY_SITE_EMAIL=admin@shoply.id
+SHOPLY_SITE_EMAIL=admin@shoply.page
 SHOPLY_SITE_PASSWORD=${admin_pwd}
 
 # 安全密钥
@@ -200,7 +247,7 @@ EOF
     echo "  配置生成成功: .env"
     echo "  - 数据库: ${db_host}:${db_port} (${db_name})"
     echo "  - 缓  存: ${redis_addr}"
-    echo "  - 管理员: admin@shoply.id (初始密码: ${admin_pwd})"
+    echo "  - 管理员: admin@shoply.page (初始密码: ${admin_pwd})"
     echo "========================================================"
     echo ""
 }
@@ -240,7 +287,7 @@ case "$1" in
         echo "[Shoply] 🚀 服务启动成功！"
         echo "[Shoply] 前台入口: http://localhost:5490"
         echo "[Shoply] 管理后台: http://localhost:5490/admin/"
-        echo "[Shoply] 登录账号: admin@shoply.id"
+        echo "[Shoply] 登录账号: admin@shoply.page"
         ;;
     stop|down)
         PROFILE_ARGS=$(get_profile_args)
