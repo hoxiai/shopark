@@ -105,10 +105,11 @@ detect_mirror_priority() {
 download_file() {
     local url="$1"
     local dest="$2"
+    local ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     if command -v curl >/dev/null 2>&1; then
-        curl -f -L --connect-timeout 10 --retry 1 --progress-bar -o "$dest" "$url"
+        curl -A "$ua" -f -L --connect-timeout 10 --retry 1 --progress-bar -o "$dest" "$url"
     elif command -v wget >/dev/null 2>&1; then
-        wget -q --show-progress -O "$dest" "$url"
+        wget --user-agent="$ua" -q --show-progress -O "$dest" "$url"
     else
         echo "[Shoply] 错误: 未检测到 curl 或 wget，无法自动下载资产包。" >&2
         return 1
@@ -119,6 +120,7 @@ download_file() {
 resolve_latest_tag() {
     local source="$1"
     local api_url=""
+    local ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     if [ "$source" = "gitcode" ]; then
         api_url="https://api.gitcode.com/api/v5/repos/hoxiai/shoply/releases/latest"
     elif [ "$source" = "github" ]; then
@@ -127,9 +129,9 @@ resolve_latest_tag() {
 
     local resp=""
     if command -v curl >/dev/null 2>&1; then
-        resp=$(curl -s -m 5 "$api_url" 2>/dev/null || true)
+        resp=$(curl -A "$ua" -s -m 5 "$api_url" 2>/dev/null || true)
     elif command -v wget >/dev/null 2>&1; then
-        resp=$(wget -q -T 5 -O - "$api_url" 2>/dev/null || true)
+        resp=$(wget --user-agent="$ua" -q -T 5 -O - "$api_url" 2>/dev/null || true)
     fi
 
     echo "$resp" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -n 1 | sed -E 's/.*"([^"]+)"$/\1/'
