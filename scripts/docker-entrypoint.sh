@@ -3,21 +3,25 @@ set -e
 
 # Explicit utility commands do not start or migrate the application.
 case "$1" in
-    doctor|--doctor|-d) set -- ./shoply "$@" ;;
+    prepare|doctor|--doctor|-d) set -- ./shoply "$@" ;;
 esac
 
 case "${1##*/}" in
     shoply|shoply-linux-*)
         doctor_requested=false
-        doctor_subcommand=false
+        utility_subcommand=false
         doctor_config_value=false
+        prepare_config=./config/conf.yaml
         for doctor_arg in "${@:2}"; do
             if $doctor_config_value; then
+                prepare_config="$doctor_arg"
                 doctor_config_value=false
                 continue
             fi
             case "$doctor_arg" in
                 -c|--config) doctor_config_value=true ;;
+                --config=*|-c=*) prepare_config="${doctor_arg#*=}" ;;
+                -c?*) prepare_config="${doctor_arg#-c}" ;;
                 --doctor|-d) doctor_requested=true ;;
                 --doctor=*|-d=*)
                     case "${doctor_arg#*=}" in
@@ -25,10 +29,10 @@ case "${1##*/}" in
                         0|f|F|false|FALSE|False) doctor_requested=false ;;
                     esac
                     ;;
-                doctor) doctor_subcommand=true ;;
+                prepare|doctor) utility_subcommand=true ;;
             esac
         done
-        if $doctor_requested || $doctor_subcommand; then
+        if $doctor_requested || $utility_subcommand; then
             exec "$@"
         fi
         ;;
@@ -104,11 +108,7 @@ if [ -n "$SHOPLY_REDIS_ADDR" ]; then
 fi
 
 # 3. 配置和应用注册先准备好，PHP CLI 才能读取同一份配置与注册表。
-if ! command -v shoply-prepare >/dev/null 2>&1; then
-    echo "[Shoply] ERROR: shoply-prepare is missing from the release image" >&2
-    exit 1
-fi
-shoply-prepare --config ./config/conf.yaml
+"$1" prepare --config "$prepare_config"
 
 # 4. 迁移失败不启动 HTTP；每次发布都检查应用模型，而非依赖临时根目录标记。
 if [ ! -f "plugins/shoply" ] || ! command -v php >/dev/null 2>&1; then

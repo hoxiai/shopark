@@ -285,7 +285,7 @@ check_assets() {
 
 check_assets
 
-# 5. 确定二进制与预处理工具路径
+# 5. 确定主程序路径；新版本内置 prepare 子命令。
 SHOPLY_BIN=""
 if [ -f "shoply" ]; then
     SHOPLY_BIN="shoply"
@@ -297,34 +297,35 @@ elif [ -f "../dist/shoply-linux-amd64" ]; then
     SHOPLY_BIN="../dist/shoply-linux-amd64"
 fi
 
-SHOPLY_PREPARE_BIN=""
-if [ -f "shoply-prepare" ]; then
-    SHOPLY_PREPARE_BIN="shoply-prepare"
-elif [ -f "shoply-prepare-linux-amd64" ]; then
-    SHOPLY_PREPARE_BIN="shoply-prepare-linux-amd64"
-elif [ -f "dist/shoply-prepare-linux-amd64" ]; then
-    SHOPLY_PREPARE_BIN="dist/shoply-prepare-linux-amd64"
-elif [ -f "../dist/shoply-prepare-linux-amd64" ]; then
-    SHOPLY_PREPARE_BIN="../dist/shoply-prepare-linux-amd64"
-fi
-
 if [ -z "$SHOPLY_BIN" ]; then
     echo "[Shoply] 错误: 未找到 shoply 二进制文件。" >&2
     exit 1
 fi
 
-if [ -z "$SHOPLY_PREPARE_BIN" ]; then
-    echo "[Shoply] 错误: 未找到 shoply-prepare 预处理工具。" >&2
-    exit 1
+# 老版本归档自带旧 Dockerfile，按归档契约兼容独立准备工具。
+LEGACY_PREPARE_ARGS=()
+if grep -q '^ARG SHOPLY_PREPARE_BINARY=' Dockerfile; then
+    SHOPLY_PREPARE_BIN=""
+    for candidate in shoply-prepare shoply-prepare-linux-amd64 dist/shoply-prepare-linux-amd64 ../dist/shoply-prepare-linux-amd64; do
+        if [ -f "$candidate" ]; then
+            SHOPLY_PREPARE_BIN="$candidate"
+            break
+        fi
+    done
+    if [ -z "$SHOPLY_PREPARE_BIN" ]; then
+        echo "[Shoply] 错误: 旧版本归档缺少 shoply-prepare 预处理工具。" >&2
+        exit 1
+    fi
+    LEGACY_PREPARE_ARGS=(--build-arg "SHOPLY_PREPARE_BINARY=$SHOPLY_PREPARE_BIN")
 fi
 
 # 6. 执行构建
-echo "[Shoply] 开始构建镜像 (SHOPLY_BINARY=$SHOPLY_BIN, PREPARE=$SHOPLY_PREPARE_BIN)..."
+echo "[Shoply] 开始构建镜像 (SHOPLY_BINARY=$SHOPLY_BIN)..."
 $ENGINE build \
     --platform "$PLATFORM" \
     --build-arg APK_MIRROR="$APK_MIRROR" \
     --build-arg SHOPLY_BINARY="$SHOPLY_BIN" \
-    --build-arg SHOPLY_PREPARE_BINARY="$SHOPLY_PREPARE_BIN" \
+    "${LEGACY_PREPARE_ARGS[@]}" \
     -t "${IMAGE_NAME}:${VERSION}" \
     -t "${IMAGE_NAME}:latest" \
     -t "${REGISTRY}/${IMAGE_NAME}:${VERSION}" \

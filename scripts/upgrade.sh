@@ -501,7 +501,7 @@ if [ "$MODE" = "container" ]; then
         exit 1
     fi
 
-    # 4. 预先创建挂载目录并平滑更新拉起容器（容器 entrypoint 会自动运行 shoply-prepare 和 php shoply db:sync）
+    # 4. 预先创建挂载目录并平滑更新拉起容器（entrypoint 自动运行 shoply prepare 和 PHP 迁移）
     mkdir -p data config public/uploads runtime data/theme-releases plugins/app
     log_info "正在平滑重建并启动 Shoply 应用容器..."
     $COMPOSE_CMD $PROFILE_ARGS up -d --force-recreate shoply
@@ -592,13 +592,19 @@ else
         [ -f "$NEW_BIN" ] || NEW_BIN="$TEMP_DIR/shoply-${OS}-${ARCH}"
         mv "$NEW_BIN" ./shoply
         chmod +x ./shoply
+    else
+        log_error "发行包缺少主程序；已停止升级。"
+        exit 1
     fi
 
+    PREPARE_COMMAND=(./shoply prepare)
+    # 指定旧版本时只使用该归档配套的工具，不能误用上一版本遗留的二进制。
     if [ -f "$TEMP_DIR/shoply-prepare" ] || [ -f "$TEMP_DIR/shoply-prepare-${OS}-${ARCH}" ]; then
         NEW_PREP="$TEMP_DIR/shoply-prepare"
         [ -f "$NEW_PREP" ] || NEW_PREP="$TEMP_DIR/shoply-prepare-${OS}-${ARCH}"
         mv "$NEW_PREP" ./shoply-prepare
         chmod +x ./shoply-prepare
+        PREPARE_COMMAND=(./shoply-prepare)
     fi
 
     # 保护性同步目录 (排除敏感与数据文件)
@@ -612,17 +618,23 @@ else
         fi
     done
 
-    # 记录版本号
-    echo "$TARGET_TAG" > .version
-
     # 执行数据库迁移
     log_info "正在执行数据库迁移..."
-    if [ -f "./shoply-prepare" ]; then
-        ./shoply-prepare --config ./config/conf.yaml || log_warn "shoply-prepare 执行警告"
+    if ! "${PREPARE_COMMAND[@]}" --config ./config/conf.yaml; then
+        log_error "配置或应用注册表迁移失败；已停止升级，请检查日志或执行回滚。"
+        exit 1
     fi
-    if [ -f "plugins/shoply" ] && command -v php >/dev/null 2>&1; then
-        (cd plugins && php shoply db:sync) || log_warn "php shoply db:sync 执行警告"
+    if [ ! -f "plugins/shoply" ] || ! command -v php >/dev/null 2>&1; then
+        log_error "缺少 PHP CLI 或 plugins/shoply；已停止升级。"
+        exit 1
     fi
+    if ! (cd plugins && php shoply db:sync); then
+        log_error "PHP 表迁移失败；已停止升级，请检查日志或执行回滚。"
+        exit 1
+    fi
+
+    # 必需迁移全部成功后才记录目标版本。
+    echo "$TARGET_TAG" > .version
 
     # 尝试平滑重启服务
     if command -v systemctl >/dev/null 2>&1 && systemctl is-active shoply >/dev/null 2>&1; then

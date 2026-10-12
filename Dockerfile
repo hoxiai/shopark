@@ -61,13 +61,11 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-p
 # ==========================================
 FROM runtime
 ARG SHOPLY_BINARY=dist/shoply-linux-amd64
-ARG SHOPLY_PREPARE_BINARY=dist/shoply-prepare-linux-amd64
 
 WORKDIR /var/www/shoply
 
 # 1. 复制宿主机编译好的 Go 主程序并赋权
 COPY --chmod=755 ${SHOPLY_BINARY} ./shoply
-COPY --chmod=755 ${SHOPLY_PREPARE_BINARY} /usr/local/bin/shoply-prepare
 
 # 2. 复制核心运行依赖与资产
 COPY --from=plugins /build ./plugins

@@ -79,7 +79,11 @@ bash scripts/upgrade.sh --rollback   # Rollback to the previous stable backup
 
 ## 🔨 Building Image Locally (Optional)
 
-Using official prebuilt images via `./scripts/shoply.sh start` is recommended. To build custom images:
+Using official prebuilt images via `./scripts/shoply.sh start` is recommended.
+
+Current releases include preparation in the main binary: `./shoply prepare --config ./config/conf.yaml`. Container startup runs preparation, PHP database migration, then the server; configuration or migration failures stop startup. No separate preparation binary is required. The build and upgrade scripts retain support for older archives that include their own preparation tool.
+
+To build custom images:
 
 ```bash
 # Using build shortcut (supports Docker / Podman)
