@@ -30,13 +30,15 @@ services:
       - SHOPLY_JWT_SIGN_KEY=${SHOPLY_JWT_SIGN_KEY:?set SHOPLY_JWT_SIGN_KEY in .env}
       - SHOPLY_JWT_SECRET_KEY=${SHOPLY_JWT_SECRET_KEY:?set SHOPLY_JWT_SECRET_KEY in .env}
       - SHOPLY_JWT_ADMIN_PERMISSION_MODE=${SHOPLY_JWT_ADMIN_PERMISSION_MODE:-enforce}
+      # 反向代理（宿主机 Nginx/Caddy、GoPanel 容器）经 Docker/Podman 网桥访问，来源是私网地址；
+      # 只信任这些来源的 X-Forwarded-For。代理不在私网时改成代理的实际 IP/CIDR。
+      - SHOPLY_HTTP_TRUSTED_PROXIES=${SHOPLY_HTTP_TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
     volumes:
       - ./config:/var/www/shoply/config:Z
       - ./data:/var/www/shoply/data:Z
       - ./runtime:/var/www/shoply/runtime:Z
       - ./public/uploads:/var/www/shoply/public/uploads:Z
       - ./plugins/app:/var/www/shoply/plugins/app:Z
-      - ./data/theme-releases:/var/www/shoply/template/themes/.releases:Z
 
   mysql:
     profiles: ["mysql"]

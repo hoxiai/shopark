@@ -137,7 +137,7 @@ verify_mysql_connection() {
         engine="podman"
     fi
     if [ -n "$engine" ]; then
-        if $engine image exists mysql:8.0 2>/dev/null; then
+        if $engine image inspect mysql:8.0 >/dev/null 2>&1; then
             local sql_check="CREATE DATABASE IF NOT EXISTS \`$db\`; USE \`$db\`; CREATE TABLE IF NOT EXISTS __shoply_chk__ (id INT); DROP TABLE __shoply_chk__;"
             local container_err
             if container_err=$($engine run --rm --net=host -e MYSQL_PWD="$pass" mysql:8.0 mysql -h "$probe_host" -P "$port" -u "$user" -e "$sql_check" 2>&1); then
@@ -573,7 +573,8 @@ interactive_setup() {
     echo ""
 
     # ------------------ 管理员账户与密钥 ------------------
-    local admin_pwd="AdminPassword123!"
+    local admin_pwd
+    admin_pwd=$(generate_secret 16)
     if [ "$is_interactive" = true ]; then
         while true; do
             read -r -p "请输入超级管理员登录密码 (登录邮箱: admin@shoply.page) [至少8位]: " input_admin_pwd

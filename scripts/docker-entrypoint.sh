@@ -2,20 +2,69 @@
 set -e
 
 # Explicit utility commands do not start or migrate the application.
+case "$1" in
+    doctor|--doctor|-d) set -- ./shoply "$@" ;;
+esac
+
 case "${1##*/}" in
-    shoply|shoply-linux-*) ;;
+    shoply|shoply-linux-*)
+        doctor_requested=false
+        doctor_subcommand=false
+        doctor_config_value=false
+        for doctor_arg in "${@:2}"; do
+            if $doctor_config_value; then
+                doctor_config_value=false
+                continue
+            fi
+            case "$doctor_arg" in
+                -c|--config) doctor_config_value=true ;;
+                --doctor|-d) doctor_requested=true ;;
+                --doctor=*|-d=*)
+                    case "${doctor_arg#*=}" in
+                        1|t|T|true|TRUE|True) doctor_requested=true ;;
+                        0|f|F|false|FALSE|False) doctor_requested=false ;;
+                    esac
+                    ;;
+                doctor) doctor_subcommand=true ;;
+            esac
+        done
+        if $doctor_requested || $doctor_subcommand; then
+            exec "$@"
+        fi
+        ;;
     *) exec "$@" ;;
 esac
 
-# 0. 初始化必要目录并支持 plugins/app 挂载自愈
+# 0. 初始化必要目录；plugins/app 通常是宿主机挂载，内置应用以镜像为准：
+#    缺失时释放，版本与镜像不一致时整体替换（镜像升级或回滚都会跟随）。
 mkdir -p public/uploads data config runtime plugins/app
 
-if [ -d "/var/www/shoply/.builtin-plugins-app" ]; then
-    if [ ! -d "plugins/app/Mall" ] || [ ! -d "plugins/app/Common" ]; then
-        echo "[Shoply] 检测到 plugins/app 挂载缺少内置核心应用，正在释放官方预置插件..."
-        cp -rn /var/www/shoply/.builtin-plugins-app/* plugins/app/ 2>/dev/null || cp -r /var/www/shoply/.builtin-plugins-app/* plugins/app/
-        echo "[Shoply] 预置插件释放完成。"
-    fi
+builtin_apps_dir=/var/www/shoply/.builtin-plugins-app
+app_version() {
+    sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1/app.json" 2>/dev/null | head -n 1
+}
+if [ -d "$builtin_apps_dir" ]; then
+    for builtin_app in "$builtin_apps_dir"/*/; do
+        builtin_app="${builtin_app%/}"
+        [ -d "$builtin_app" ] || continue
+        app_name="${builtin_app##*/}"
+        app_target="plugins/app/$app_name"
+        image_version="$(app_version "$builtin_app")"
+        if [ ! -d "$app_target" ]; then
+            echo "[Shoply] Installing built-in application $app_name $image_version"
+            cp -r "$builtin_app" "$app_target"
+        elif [ "$(app_version "$app_target")" != "$image_version" ]; then
+            if [ -e "$app_target/.git" ]; then
+                echo "[Shoply] WARNING: $app_target is a source checkout; keeping it instead of image version $image_version" >&2
+                continue
+            fi
+            echo "[Shoply] Replacing built-in application $app_name with image version $image_version"
+            rm -rf "$app_target.next"
+            cp -r "$builtin_app" "$app_target.next"
+            rm -rf "$app_target"
+            mv "$app_target.next" "$app_target"
+        fi
+    done
 fi
 
 # 等待 TCP 端口就绪工具函数

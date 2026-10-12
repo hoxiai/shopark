@@ -17,13 +17,14 @@
 **/.vite
 **/.vite/**
 
-# 仅保留 Common 与 Mall 两个官方核心内置应用供自愈释放
+# 内置应用：只打包随镜像发布的 Importexport 与 Sheet（与主工程 .dockerignore 一致）；
+# 本目录的 plugins/app 同时是运行挂载目录，其它应用不进镜像。
 plugins/app/*
 !plugins/app/.gitkeep
-!plugins/app/Common/
-!plugins/app/Common/**
-!plugins/app/Mall/
-!plugins/app/Mall/**
+!plugins/app/Importexport/
+!plugins/app/Importexport/**
+!plugins/app/Sheet/
+!plugins/app/Sheet/**
 
 template/themes/*
 !template/themes/default/
@@ -31,7 +32,11 @@ template/themes/*
 template/themes/**/md/
 template/themes/**/md/**
 
+# 归档中的 vendor 已按 composer.lock 去掉开发依赖，不要再按目录删包（autoload 会引用失败）
 plugins/vendor/**/.git
 plugins/vendor/**/.git/**
-plugins/vendor/phpunit/
-plugins/vendor/phpunit/**
+
+# 放在最后，覆盖上面的放行
+**/.git
+**/.git/**
+**/.DS_Store

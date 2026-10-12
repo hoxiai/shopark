@@ -32,10 +32,8 @@ fi
 VERSION=""
 IMAGE_NAME="${IMAGE_NAME:-hoxiai/shoply}"
 if [ -z "$SHOPLY_BASE_IMAGE" ]; then
-    if $ENGINE image exists shoply-base:latest 2>/dev/null; then
+    if $ENGINE image inspect shoply-base:latest >/dev/null 2>&1; then
         BASE_IMAGE="shoply-base:latest"
-    elif $ENGINE image exists registry.cn-hangzhou.aliyuncs.com/hoxiai/shoply-base:latest 2>/dev/null; then
-        BASE_IMAGE="registry.cn-hangzhou.aliyuncs.com/hoxiai/shoply-base:latest"
     else
         BASE_IMAGE="registry.cn-hangzhou.aliyuncs.com/hoxiai/shoply-base:latest"
     fi

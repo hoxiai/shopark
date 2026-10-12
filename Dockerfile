@@ -16,10 +16,12 @@ ENV TZ=UTC
 COPY --chmod=755 ${SHOPLY_BINARY} ./shoply
 COPY --chmod=755 ${SHOPLY_PREPARE_BINARY} /usr/local/bin/shoply-prepare
 
-# 2. 复制核心运行依赖与静态资产
+# 2. 复制核心运行依赖与静态资产（归档由主工程从镜像导出，plugins/vendor 已不含开发依赖）
 COPY plugins ./plugins
 COPY resource ./resource
 COPY template ./template
+COPY dist/admin ./dist/admin
+COPY dist/site ./dist/site
 COPY public ./public
 
 # 3. 复制容器入口脚本并赋权
