@@ -78,6 +78,10 @@ case "$1" in
         $COMPOSE_CMD up -d shoply
         echo "[Shoply] 更新完成！"
         ;;
+    build)
+        shift
+        exec ./scripts/build-image.sh "$@"
+        ;;
     help|*)
         echo "Shoply 容器管理工具"
         echo ""
@@ -90,6 +94,7 @@ case "$1" in
         echo "  status    查看各服务运行状态"
         echo "  logs      跟踪实时日志 (例: ./scripts/shoply.sh logs)"
         echo "  update    拉取最新镜像并平滑更新应用容器"
+        echo "  build     构建本地 Docker / Podman 镜像 (例: ./scripts/shoply.sh build v1.0.0)"
         echo "  help      显示此帮助信息"
         echo ""
         ;;

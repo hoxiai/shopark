@@ -69,7 +69,25 @@ Manage your instance easily via `./scripts/shoply.sh`:
 
 # Pull the latest image and update with zero hassle
 ./scripts/shoply.sh update
+
+# Build local container image (see below)
+./scripts/shoply.sh build v1.0.0
 ```
+
+---
+
+## 🔨 Building Image Locally (Optional)
+
+Using official prebuilt images via `./scripts/shoply.sh start` is recommended. To build custom images:
+
+```bash
+# Using build shortcut (supports Docker / Podman)
+./build.sh v1.0.0
+
+# Or via management CLI
+./scripts/shoply.sh build v1.0.0
+```
+> **Note**: Building images requires runtime binaries and assets. Place the official release archive (`shoply-vX.Y.Z-linux-amd64.tar.gz` from GitHub Releases) in this directory and extract before running the build.
 
 ---
 

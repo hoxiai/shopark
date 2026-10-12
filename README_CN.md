@@ -69,7 +69,25 @@ docker compose up -d
 
 # 一键拉取最新镜像并平滑更新升级
 ./scripts/shoply.sh update
+
+# 本地构建镜像 (详见下方说明)
+./scripts/shoply.sh build v1.0.0
 ```
+
+---
+
+## 🔨 本地构建镜像 (可选)
+
+官方推荐直接拉取预构建镜像运行（开箱即用）。若您需要本地定制或基于离线包构建：
+
+```bash
+# 执行构建脚本 (支持 Docker / Podman 自动适配)
+./build.sh v1.0.0
+
+# 或通过运维脚本执行:
+./scripts/shoply.sh build v1.0.0
+```
+> **说明**：构建镜像需要可执行二进制及插件静态资源。若当前目录下缺少资产，请将官方 Release 附件 (`shoply-vX.Y.Z-linux-amd64.tar.gz`) 放置于本目录解压，脚本会自动检测并执行镜像构建。
 
 ---
 
