@@ -1,0 +1,23 @@
+# Project metadata & VCS
+**/.git
+**/.git/**
+**/.gitignore
+**/.DS_Store
+**/.DS_Store/**
+
+# Local env / archives
+.env
+*.tar.gz
+*.tmp*
+
+# Node dependencies
+**/node_modules
+**/node_modules/**
+
+# Exclude raw docs / tests in vendor
+plugins/vendor/**/.git
+plugins/vendor/**/.git/**
+plugins/vendor/phpunit/
+plugins/vendor/phpunit/**
+template/themes/**/md/
+template/themes/**/md/**
