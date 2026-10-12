@@ -5,6 +5,8 @@ runtime/
 public/uploads/
 plugins/app/
 config/conf.yaml
+config/*.pem
+config/*.lock
 backup/
 .upgrade.lock
 *.log

@@ -39,6 +39,7 @@ services:
       - ./runtime:/var/www/shoply/runtime:Z
       - ./public/uploads:/var/www/shoply/public/uploads:Z
       - ./plugins/app:/var/www/shoply/plugins/app:Z
+      - ../template/themes:/var/www/shoply/template/themes:Z
 
   mysql:
     profiles: ["mysql"]
