@@ -7,6 +7,17 @@ case "${1##*/}" in
     *) exec "$@" ;;
 esac
 
+# 0. 初始化必要目录并支持 plugins/app 挂载自愈
+mkdir -p public/uploads data config runtime plugins/app
+
+if [ -d "/var/www/shoply/.builtin-plugins-app" ]; then
+    if [ ! -d "plugins/app/Mall" ] || [ ! -d "plugins/app/Common" ]; then
+        echo "[Shoply] 检测到 plugins/app 挂载缺少内置核心应用，正在释放官方预置插件..."
+        cp -rn /var/www/shoply/.builtin-plugins-app/* plugins/app/ 2>/dev/null || cp -r /var/www/shoply/.builtin-plugins-app/* plugins/app/
+        echo "[Shoply] 预置插件释放完成。"
+    fi
+fi
+
 # 等待 TCP 端口就绪工具函数
 wait_for_port() {
     local host="$1"

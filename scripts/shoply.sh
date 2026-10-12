@@ -671,6 +671,19 @@ case "$1" in
         if [ ! -f ".env" ]; then
             interactive_setup
         fi
+
+        # 1. 预先以宿主机当前用户身份创建所有持久化挂载目录，杜绝 Docker(root)/Podman 卷权限冲突
+        mkdir -p data config public/uploads runtime data/theme-releases
+
+        # 2. 若检测到以非 root 用户使用 Podman (Rootless)，检查并启用用户会话常驻 (Linger)
+        if [[ "$COMPOSE_CMD" == *"podman"* ]] && [ "$(id -u)" -ne 0 ]; then
+            if command -v loginctl >/dev/null 2>&1; then
+                if ! loginctl show-user "$USER" 2>/dev/null | grep -q "Linger=yes"; then
+                    loginctl enable-linger "$USER" 2>/dev/null || echo "[Shoply] 提示: 建议执行 'loginctl enable-linger \$USER' 以确保 SSH 会话断开后 Podman 容器持续常驻后台。"
+                fi
+            fi
+        fi
+
         PROFILE_ARGS=$(get_profile_args)
         echo "[Shoply] 正在启动服务 (使用: $COMPOSE_CMD $PROFILE_ARGS)..."
         $COMPOSE_CMD $PROFILE_ARGS up -d

@@ -475,7 +475,8 @@ if [ "$MODE" = "container" ]; then
         exit 1
     fi
 
-    # 4. 平滑更新并拉起容器（容器 entrypoint 会自动运行 shoply-prepare 和 php shoply db:sync）
+    # 4. 预先创建挂载目录并平滑更新拉起容器（容器 entrypoint 会自动运行 shoply-prepare 和 php shoply db:sync）
+    mkdir -p data config public/uploads runtime data/theme-releases
     log_info "正在平滑重建并启动 Shoply 应用容器..."
     $COMPOSE_CMD $PROFILE_ARGS up -d shoply
 

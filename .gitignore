@@ -3,6 +3,7 @@
 data/
 runtime/
 public/uploads/
+plugins/app/
 config/conf.yaml
 backup/
 .upgrade.lock

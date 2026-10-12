@@ -141,13 +141,16 @@ server {
 
 ---
 
-## 💾 Data Persistence & Backup
+## 💾 Data Persistence & Directory Structure
 
-Persistent application state is isolated in:
-- `./data`: runtime store and package releases
-- `./public/uploads`: uploaded media and catalogs
-- `mysql_data`: database volume (or backup via `mysqldump`)
-- `redis_data`: cache & session data volume
+Persistent application state and customizable directories:
+- `./config`: primary configuration (`conf.yaml`, database and store settings)
+- `./data`: runtime store and plugin cache
+- `./data/theme-releases`: custom/uploaded storefront theme releases
+- `./plugins/app`: **business plugins & apps** (built-in plugins are auto-seeded on first run; supports live editing & customization)
+- `./public/uploads`: **uploaded media and assets** (product images, brand assets, permanently preserved)
+- `./runtime`: live logs (`runtime/logs`) for real-time monitoring and debugging
+- `mysql_data` / `redis_data`: database and cache container volumes
 
 ---
 
