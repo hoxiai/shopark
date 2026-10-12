@@ -1,7 +1,7 @@
 # ========================================================
 # Shoply 生产运行镜像构建 Dockerfile
 # ========================================================
-ARG SHOPLY_BASE_IMAGE=registry.cn-hangzhou.aliyuncs.com/hoxiai/shoply:latest
+ARG SHOPLY_BASE_IMAGE=registry.cn-shenzhen.aliyuncs.com/hoxiai/shoply:latest
 ARG SHOPLY_PLATFORM=linux/amd64
 
 FROM --platform=${SHOPLY_PLATFORM} ${SHOPLY_BASE_IMAGE}

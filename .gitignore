@@ -4,6 +4,8 @@ data/
 runtime/
 public/uploads/
 config/conf.yaml
+backup/
+.upgrade.lock
 *.log
 *.tar.gz
 *.zip

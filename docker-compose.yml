@@ -1,6 +1,6 @@
 services:
   shoply:
-    image: ${SHOPLY_IMAGE_REGISTRY:-registry.cn-hangzhou.aliyuncs.com}/${SHOPLY_IMAGE_NAME:-hoxiai/shoply}:${SHOPLY_VERSION:-latest}
+    image: ${SHOPLY_IMAGE_REGISTRY:-registry.cn-shenzhen.aliyuncs.com}/${SHOPLY_IMAGE_NAME:-hoxiai/shoply}:${SHOPLY_VERSION:-latest}
     container_name: shoply-app
     restart: unless-stopped
     ports:

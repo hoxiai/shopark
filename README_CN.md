@@ -60,8 +60,13 @@ cd shoply
 # 跟踪查看主服务实时日志
 ./scripts/shoply.sh logs
 
-# 一键拉取最新镜像并平滑更新升级
+# 一键检查并在线平滑更新升级 (支持指定版本与自动回滚)
 ./scripts/shoply.sh update
+# 或直接运行专用升级脚本:
+bash scripts/upgrade.sh              # 检查并更新至最新版本
+bash scripts/upgrade.sh v1.0.1       # 升级至指定版本
+bash scripts/upgrade.sh --check      # 仅检查是否有新版本
+bash scripts/upgrade.sh --rollback   # 故障时快速回滚至上一稳定版本
 
 # 本地构建镜像 (详见下方说明)
 ./scripts/shoply.sh build v1.0.0

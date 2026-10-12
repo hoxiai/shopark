@@ -60,8 +60,13 @@ Manage your instance easily via `./scripts/shoply.sh`:
 # Follow real-time application logs
 ./scripts/shoply.sh logs
 
-# Pull the latest image and update with zero hassle
+# Check and perform smooth online update (supports version pinning & auto-rollback)
 ./scripts/shoply.sh update
+# Or run the dedicated upgrade script:
+bash scripts/upgrade.sh              # Update to the latest release
+bash scripts/upgrade.sh v1.0.1       # Upgrade to a specific version
+bash scripts/upgrade.sh --check      # Check for available updates
+bash scripts/upgrade.sh --rollback   # Rollback to the previous stable backup
 
 # Build local container image (see below)
 ./scripts/shoply.sh build v1.0.0
