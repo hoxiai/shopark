@@ -17,14 +17,9 @@
 **/.vite
 **/.vite/**
 
-# 内置应用：只打包随镜像发布的 Importexport 与 Sheet（与主工程 .dockerignore 一致）；
-# 本目录的 plugins/app 同时是运行挂载目录，其它应用不进镜像。
+# 应用：默认不打包任何应用进入镜像（保持镜像纯净，应用通过挂载或应用市场安装）
 plugins/app/*
 !plugins/app/.gitkeep
-!plugins/app/Importexport/
-!plugins/app/Importexport/**
-!plugins/app/Sheet/
-!plugins/app/Sheet/**
 
 template/themes/*
 !template/themes/default/
