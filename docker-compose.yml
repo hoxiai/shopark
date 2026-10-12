@@ -33,6 +33,9 @@ services:
       # 反向代理（宿主机 Nginx/Caddy、GoPanel 容器）经 Docker/Podman 网桥访问，来源是私网地址；
       # 只信任这些来源的 X-Forwarded-For。代理不在私网时改成代理的实际 IP/CIDR。
       - SHOPLY_HTTP_TRUSTED_PROXIES=${SHOPLY_HTTP_TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      # 官方应用与主题市场接口
+      - SHOPLY_OFFICIAL_API_URL=${SHOPLY_OFFICIAL_API_URL:-https://iqingpu.com}
+      - SHOPLY_REGISTRY_URL=${SHOPLY_REGISTRY_URL:-https://iqingpu.com}
     volumes:
       - ./config:/var/www/shoply/config:Z
       - ./data:/var/www/shoply/data:Z
