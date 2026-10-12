@@ -38,7 +38,7 @@ RUN set -eux; \
     apk add --no-cache --virtual .shoply-phpext-rundeps $runDeps; \
     apk del --no-network .build-deps; \
     rm -rf /tmp/pear ~/.pearrc /usr/local/lib/php/test /usr/local/lib/php/doc; \
-    apk add --no-cache bash nodejs tzdata; \
+    apk add --no-cache bash nodejs python3 tzdata; \
     php -m | grep -qi '^protobuf$'; \
     node -v
 
@@ -55,6 +55,14 @@ FROM runtime AS plugins
 WORKDIR /build
 COPY plugins ./
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress --no-plugins --no-scripts
+
+# 仅安装独立主题编译器；复用 Site 锁文件确保 Vue/编译器版本一致，不构建 Site。
+FROM runtime AS theme-builder
+WORKDIR /build
+RUN apk add --no-cache npm && npm install --global yarn@1.22.22
+COPY scripts/theme-builder/package.json ./package.json
+COPY site/yarn.lock ./yarn.lock
+RUN yarn install --production --frozen-lockfile --non-interactive
 
 # ==========================================
 # 最终运行镜像
@@ -77,6 +85,13 @@ COPY template ./template
 COPY dist/admin ./dist/admin
 COPY dist/site ./dist/site
 COPY public ./public
+COPY --from=theme-builder /build/package.json ./site/package.json
+COPY --from=theme-builder /build/yarn.lock ./site/yarn.lock
+COPY --from=theme-builder /build/node_modules ./site/node_modules
+COPY scripts/theme-builder/package.json ./scripts/theme-builder/package.json
+COPY scripts/build-ai-decor-theme.mjs ./scripts/build-ai-decor-theme.mjs
+COPY scripts/lib/resolve-ts.mjs scripts/lib/ai-decor-modules.mjs scripts/lib/theme-decor-files.mjs ./scripts/lib/
+COPY ai-decor/src ./ai-decor/src
 
 # 3. 复制容器入口脚本并赋予执行权限
 COPY --chmod=755 scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
