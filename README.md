@@ -80,7 +80,7 @@ Using official prebuilt images via `./scripts/shoply.sh start` is recommended. T
 # Or via management CLI
 ./scripts/shoply.sh build v1.0.0
 ```
-> **Note**: Building images requires runtime binaries and assets. Place the official release archive (`shoply-vX.Y.Z-linux-amd64.tar.gz` from GitHub Releases) in this directory and extract before running the build.
+> **Note**: Building images requires closed-source binaries and runtime assets. If local assets are missing, the build script automatically fetches and extracts the corresponding release package (`shoply-*.tar.gz`) from official Releases (GitHub or GitCode, configurable via `--github` / `--gitcode`). Offline manual placement of the archive is also supported.
 
 ---
 
