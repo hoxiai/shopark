@@ -62,6 +62,9 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-p
 FROM runtime
 ARG SHOPLY_BINARY=dist/shoply-linux-amd64
 
+# purego (webp 动态加载) 产生 libc/libdl 动态链接，引入 gcompat 兼容层保证 Alpine 正常执行
+RUN apk add --no-cache gcompat
+
 WORKDIR /var/www/shoply
 
 # 1. 复制宿主机编译好的 Go 主程序并赋权
