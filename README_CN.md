@@ -22,23 +22,16 @@ git clone https://gitcode.com/hoxiai/shoply.git
 cd shoply
 ```
 
-### 2. 生成运行配置
+### 2. 一键启动（智能向导与端口自动检测）
+进入目录后，直接执行根目录管理脚本：
 ```bash
-cp .env.example .env
+./shoply.sh start
 ```
-> **提示**：建议在 `.env` 中修改默认数据库密码、初始管理员密码（`SHOPLY_SITE_PASSWORD`）以及 `SHOPLY_JWT_SECRET_KEY` 等安全密钥。
-> 默认配置已指向**阿里云国内公开镜像源**，国内服务器拉取极速稳定。
-
-### 3. 一键启动
-使用内置管理脚本（自动适配 Docker 与 Podman）：
-```bash
-chmod +x scripts/shoply.sh
-./scripts/shoply.sh start
-```
-或者直接使用标准的 Docker Compose 命令：
-```bash
-docker compose up -d
-```
+> **💡 智能检测特性**：
+> - 脚本会自动扫描宿主机 **3306 (MySQL)** 与 **6379 (Redis)** 端口。
+> - **若宿主机已有 MySQL/Redis**：会提示确认并引导输入数据库库名、账号密码，Shoply 将直接连接已有服务，**不启动多余容器**。
+> - **若未检测到或选择独立运行**：会自动以容器方式一键拉起 MySQL 8.0 与 Redis 7，并自动生成高强度随机密码写入 `.env`。
+> - 默认配置已指向**阿里云国内公开镜像源**，国内服务器拉取极速稳定。
 
 ### 4. 访问系统
 - **商城前台**：`http://localhost:5490`

@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "${SHOPLY_HTTP_PORT:-5490}:5490"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - SHOPLY_MODE=production
       # 数据库连接
@@ -16,7 +18,7 @@ services:
       - SHOPLY_DB_PASSWORD=${SHOPLY_DB_PASSWORD:?set SHOPLY_DB_PASSWORD in .env}
       # Redis 缓存连接
       - SHOPLY_REDIS_ADDR=${SHOPLY_REDIS_ADDR:-redis:6379}
-      - SHOPLY_REDIS_PASSWORD=${SHOPLY_REDIS_PASSWORD:?set SHOPLY_REDIS_PASSWORD in .env}
+      - SHOPLY_REDIS_PASSWORD=${SHOPLY_REDIS_PASSWORD:-}
       - SHOPLY_REDIS_DB=${SHOPLY_REDIS_DB:-0}
       # 站点与初始管理员
       - SHOPLY_STORE_NAME=${SHOPLY_STORE_NAME:-Shoply Store}
@@ -33,13 +35,9 @@ services:
       - ./public:/var/www/shoply/public:Z
       - ./runtime:/var/www/shoply/runtime:Z
       - ./data/theme-releases:/var/www/shoply/template/themes/.releases:Z
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   mysql:
+    profiles: ["mysql"]
     image: mysql:8.0
     container_name: shoply-mysql
     restart: unless-stopped
@@ -48,10 +46,10 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     environment:
-      MYSQL_ROOT_PASSWORD: ${SHOPLY_MYSQL_ROOT_PASSWORD:?set SHOPLY_MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${SHOPLY_MYSQL_ROOT_PASSWORD:-shoply_root_password_change_me}
       MYSQL_DATABASE: ${SHOPLY_DB_DATABASE:-shoply}
       MYSQL_USER: ${SHOPLY_DB_USERNAME:-shoply}
-      MYSQL_PASSWORD: ${SHOPLY_DB_PASSWORD:?set SHOPLY_DB_PASSWORD in .env}
+      MYSQL_PASSWORD: ${SHOPLY_DB_PASSWORD:-shoply_db_password_change_me}
     volumes:
       - mysql_data:/var/lib/mysql:Z
     healthcheck:
@@ -61,12 +59,13 @@ services:
       retries: 10
 
   redis:
+    profiles: ["redis"]
     image: redis:7-alpine
     container_name: shoply-redis
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${SHOPLY_REDIS_PASSWORD:?set SHOPLY_REDIS_PASSWORD in .env}"]
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${SHOPLY_REDIS_PASSWORD:-shoply_redis_password_change_me}"]
     environment:
-      REDISCLI_AUTH: ${SHOPLY_REDIS_PASSWORD:?set SHOPLY_REDIS_PASSWORD in .env}
+      REDISCLI_AUTH: ${SHOPLY_REDIS_PASSWORD:-shoply_redis_password_change_me}
     volumes:
       - redis_data:/data:Z
     healthcheck:

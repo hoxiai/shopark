@@ -22,23 +22,16 @@ git clone https://github.com/hoxiai/shoply.git
 cd shoply
 ```
 
-### 2. Configure Environment
+### 2. Launch Services (Smart Port Detection & Setup)
+Run the root helper script directly:
 ```bash
-cp .env.example .env
+./shoply.sh start
 ```
-> **Notice**: Open `.env` and set secure credentials for database passwords, initial admin password (`SHOPLY_SITE_PASSWORD`), and JWT signing keys (`SHOPLY_JWT_SECRET_KEY`).
-> For international deployments, switch `SHOPLY_IMAGE_REGISTRY=ghcr.io` in `.env` if desired.
-
-### 3. Launch Services
-Using the included operations script (auto-detects Docker or Podman):
-```bash
-chmod +x scripts/shoply.sh
-./scripts/shoply.sh start
-```
-Or with standard Docker Compose:
-```bash
-docker compose up -d
-```
+> **💡 Smart Detection Features**:
+> - Scans host ports **3306 (MySQL)** and **6379 (Redis)** automatically.
+> - **Existing host MySQL / Redis detected**: Prompts to connect directly without starting unnecessary containers.
+> - **No existing services found**: Automatically spins up containerized MySQL 8.0 & Redis 7 with auto-generated secure credentials.
+> - For international deployments, switch `SHOPLY_IMAGE_REGISTRY=ghcr.io` in `.env` if desired.
 
 ### 4. Access Shoply
 - **Storefront**: `http://localhost:5490`
