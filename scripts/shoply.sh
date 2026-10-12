@@ -673,7 +673,7 @@ case "$1" in
         fi
 
         # 1. 预先以宿主机当前用户身份创建所有持久化挂载目录，杜绝 Docker(root)/Podman 卷权限冲突
-        mkdir -p data config public/uploads runtime data/theme-releases
+        mkdir -p data config public/uploads runtime data/theme-releases plugins/app
 
         # 2. 若检测到以非 root 用户使用 Podman (Rootless)，检查并启用用户会话常驻 (Linger)
         if [[ "$COMPOSE_CMD" == *"podman"* ]] && [ "$(id -u)" -ne 0 ]; then
