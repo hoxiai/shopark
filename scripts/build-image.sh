@@ -35,13 +35,13 @@ if [ -z "$SHOPLY_BASE_IMAGE" ]; then
     if $ENGINE image exists shoply:latest 2>/dev/null; then
         BASE_IMAGE="shoply:latest"
     else
-        BASE_IMAGE="registry.cn-shenzhen.aliyuncs.com/hoxiai/shoply:latest"
+        BASE_IMAGE="crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com/hoxiai/shoply:latest"
     fi
 else
     BASE_IMAGE="$SHOPLY_BASE_IMAGE"
 fi
 PLATFORM="${SHOPLY_PLATFORM:-linux/amd64}"
-REGISTRY="${SHOPLY_REGISTRY:-registry.cn-shenzhen.aliyuncs.com}"
+REGISTRY="${SHOPLY_REGISTRY:-crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com}"
 DO_PUSH=false
 SHOPLY_MIRROR="${SHOPLY_MIRROR:-}"
 

@@ -599,7 +599,7 @@ interactive_setup() {
 # ========================================================
 
 # 容器镜像配置
-SHOPLY_IMAGE_REGISTRY=registry.cn-shenzhen.aliyuncs.com
+SHOPLY_IMAGE_REGISTRY=crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com
 SHOPLY_IMAGE_NAME=hoxiai/shoply
 SHOPLY_VERSION=latest
 SHOPLY_HTTP_PORT=5490
