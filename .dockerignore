@@ -17,6 +17,14 @@
 **/.vite
 **/.vite/**
 
+# 仅保留 Common 与 Mall 两个官方核心内置应用供自愈释放
+plugins/app/*
+!plugins/app/.gitkeep
+!plugins/app/Common/
+!plugins/app/Common/**
+!plugins/app/Mall/
+!plugins/app/Mall/**
+
 template/themes/*
 !template/themes/default/
 !template/themes/default/**
