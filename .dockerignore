@@ -1,23 +1,32 @@
-# Project metadata & VCS
+# ========================================================
+# Shoply Release 镜像构建忽略规则
+# ========================================================
+
 **/.git
 **/.git/**
 **/.gitignore
 **/.DS_Store
 **/.DS_Store/**
 
-# Local env / archives
 .env
 *.tar.gz
 *.tmp*
 
-# Node dependencies
 **/node_modules
 **/node_modules/**
+**/.vite
+**/.vite/**
 
-# Exclude raw docs / tests in vendor
+# 动态安装的业务应用与商业主题
+plugins/app/*
+!plugins/app/.gitkeep
+template/themes/*
+!template/themes/default/
+!template/themes/default/**
+template/themes/**/md/
+template/themes/**/md/**
+
 plugins/vendor/**/.git
 plugins/vendor/**/.git/**
 plugins/vendor/phpunit/
 plugins/vendor/phpunit/**
-template/themes/**/md/
-template/themes/**/md/**

@@ -1,7 +1,7 @@
 # ========================================================
 # Shoply 生产运行镜像构建 Dockerfile
 # ========================================================
-ARG SHOPLY_BASE_IMAGE=crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com/hoxiai/shoply:latest
+ARG SHOPLY_BASE_IMAGE=shoply-base:latest
 ARG SHOPLY_PLATFORM=linux/amd64
 
 FROM --platform=${SHOPLY_PLATFORM} ${SHOPLY_BASE_IMAGE}
@@ -25,9 +25,8 @@ COPY public ./public
 # 3. 复制容器入口脚本并赋权
 COPY --chmod=755 scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# 4. 创建挂载与运行态目录，并备份内置应用插件供宿主机挂载时自愈释放
-RUN mkdir -p data config platform runtime tenant public/uploads && \
-    cp -r plugins/app /var/www/shoply/.builtin-plugins-app
+# 4. 预创建挂载与运行态目录
+RUN mkdir -p data config platform runtime tenant public/uploads plugins/app
 
 EXPOSE 5490
 
