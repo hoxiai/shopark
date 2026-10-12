@@ -42,20 +42,23 @@ Run the root helper script directly:
 
 ## 🛠️ Management CLI (`shoply.sh`)
 
-Manage your instance easily via `./scripts/shoply.sh`:
+Manage your instance easily via `./shoply.sh` (or `./scripts/shoply.sh`):
 
 ```bash
-# Start all containers in detached mode
-./scripts/shoply.sh start
+# Start all containers (auto-launches setup wizard if unconfigured)
+./shoply.sh start
+
+# Re-run setup wizard to reconfigure .env & prompt restart
+./shoply.sh init
 
 # Stop running containers
-./scripts/shoply.sh stop
+./shoply.sh stop
 
-# Restart services
-./scripts/shoply.sh restart
+# Safely restart all services (fully reloads .env, service profiles & container definitions)
+./shoply.sh restart
 
 # Check container health and status
-./scripts/shoply.sh status
+./shoply.sh status
 
 # Follow real-time application logs
 ./scripts/shoply.sh logs

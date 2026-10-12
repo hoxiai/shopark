@@ -227,7 +227,26 @@ if [ "$MODE" = "auto" ]; then
     fi
 fi
 
-# 5. 回滚逻辑实现
+# 5. 容器模式 Profile 解析函数
+get_profile_args() {
+    local args=()
+    if [ -f ".env" ]; then
+        local use_mysql=$(grep -E "^USE_EMBEDDED_MYSQL=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
+        local use_redis=$(grep -E "^USE_EMBEDDED_REDIS=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
+
+        if [ "$use_mysql" = "true" ] || [ -z "$use_mysql" ]; then
+            args+=(--profile mysql)
+        fi
+        if [ "$use_redis" = "true" ] || [ -z "$use_redis" ]; then
+            args+=(--profile redis)
+        fi
+    else
+        args+=(--profile mysql --profile redis)
+    fi
+    echo "${args[@]}"
+}
+
+# 6. 回滚逻辑实现
 do_rollback() {
     log_info "正在执行系统回滚操作..."
     local backup_root="backup"
@@ -277,8 +296,34 @@ do_rollback() {
         fi
 
         log_info "正在重新拉起回滚版本的容器..."
-        $COMPOSE_CMD up -d shoply
+        local rollback_profile_args
+        rollback_profile_args=$(get_profile_args)
+        $COMPOSE_CMD $rollback_profile_args up -d --force-recreate shoply
         log_success "容器回滚拉起完成！"
+
+        # 回滚服务就绪探测
+        local http_port="5490"
+        if [ -f ".env" ]; then
+            http_port=$(grep -E "^SHOPLY_HTTP_PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || echo "5490")
+        fi
+        http_port="${http_port:-5490}"
+        log_info "正在验证回滚后服务就绪状态 (循环探测 http://127.0.0.1:${http_port}) ..."
+        local probe_ok=false
+        for i in $(seq 1 30); do
+            sleep 2
+            if curl -s -f -m 3 "http://127.0.0.1:${http_port}" >/dev/null 2>&1 || \
+               curl -s -f -m 3 "http://127.0.0.1:${http_port}/api/admin/auth/password-key" >/dev/null 2>&1; then
+                probe_ok=true
+                break
+            fi
+            echo -n "."
+        done
+        echo ""
+        if [ "$probe_ok" = true ]; then
+            log_success "回滚版本健康探测通过！"
+        else
+            log_warn "服务尚未响应，建议检查日志: $COMPOSE_CMD logs shoply"
+        fi
     else
         # 二进制模式回滚
         if [ -f "$backup_dir/shoply" ]; then
@@ -311,25 +356,6 @@ do_rollback() {
 if [ "$DO_ROLLBACK" = true ]; then
     do_rollback
 fi
-
-# 6. 容器模式专用函数
-get_profile_args() {
-    local args=()
-    if [ -f ".env" ]; then
-        local use_mysql=$(grep -E "^USE_EMBEDDED_MYSQL=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
-        local use_redis=$(grep -E "^USE_EMBEDDED_REDIS=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
-
-        if [ "$use_mysql" = "true" ] || [ -z "$use_mysql" ]; then
-            args+=(--profile mysql)
-        fi
-        if [ "$use_redis" = "true" ] || [ -z "$use_redis" ]; then
-            args+=(--profile redis)
-        fi
-    else
-        args+=(--profile mysql --profile redis)
-    fi
-    echo "${args[@]}"
-}
 
 # 7. 升级执行主干流程
 acquire_lock
@@ -478,7 +504,7 @@ if [ "$MODE" = "container" ]; then
     # 4. 预先创建挂载目录并平滑更新拉起容器（容器 entrypoint 会自动运行 shoply-prepare 和 php shoply db:sync）
     mkdir -p data config public/uploads runtime data/theme-releases plugins/app
     log_info "正在平滑重建并启动 Shoply 应用容器..."
-    $COMPOSE_CMD $PROFILE_ARGS up -d shoply
+    $COMPOSE_CMD $PROFILE_ARGS up -d --force-recreate shoply
 
     # 5. 服务就绪探测 (Health Check Probe)
     HTTP_PORT=5490

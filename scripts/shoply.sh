@@ -662,36 +662,94 @@ get_profile_args() {
     echo "${args[@]}"
 }
 
-# 6. 命令路由
+# 6. 运行环境前置准备 (挂载目录与 Podman Rootless 权限)
+ensure_runtime_env() {
+    # 1. 预先以宿主机当前用户身份创建所有持久化挂载目录，杜绝 Docker(root)/Podman 卷权限冲突
+    mkdir -p data config public/uploads runtime data/theme-releases plugins/app
+
+    # 2. 若检测到以非 root 用户使用 Podman (Rootless)，检查并启用用户会话常驻 (Linger)
+    if [[ "$COMPOSE_CMD" == *"podman"* ]] && [ "$(id -u)" -ne 0 ]; then
+        if command -v loginctl >/dev/null 2>&1; then
+            if ! loginctl show-user "$USER" 2>/dev/null | grep -q "Linger=yes"; then
+                loginctl enable-linger "$USER" 2>/dev/null || echo "[Shoply] 提示: 建议执行 'loginctl enable-linger \$USER' 以确保 SSH 会话断开后 Podman 容器持续常驻后台。"
+            fi
+        fi
+    fi
+}
+
+# 7. 打印访问入口信息
+print_service_endpoints() {
+    local http_port="5490"
+    local admin_email="admin@shoply.page"
+    if [ -f ".env" ]; then
+        local p
+        p=$(grep -E "^SHOPLY_HTTP_PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
+        [ -n "$p" ] && http_port="$p"
+        local e
+        e=$(grep -E "^SHOPLY_SITE_EMAIL=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
+        [ -n "$e" ] && admin_email="$e"
+    fi
+    echo "[Shoply] 前台入口: http://localhost:${http_port}"
+    echo "[Shoply] 管理后台: http://localhost:${http_port}/admin/"
+    echo "[Shoply] 登录账号: ${admin_email}"
+}
+
+# 8. 服务启动流程
+start_service() {
+    if [ ! -f ".env" ]; then
+        interactive_setup
+    fi
+
+    ensure_runtime_env
+    local profile_args
+    profile_args=$(get_profile_args)
+    echo "[Shoply] 正在启动服务 (使用: $COMPOSE_CMD $profile_args)..."
+    $COMPOSE_CMD $profile_args up -d
+    echo ""
+    echo "[Shoply] 🚀 服务启动成功！"
+    print_service_endpoints
+}
+
+# 9. 服务重启流程 (重载 .env 与服务配置)
+restart_service() {
+    if [ ! -f ".env" ]; then
+        echo "[Shoply] 未检测到 .env 配置文件，正在启动向导..."
+        interactive_setup
+    fi
+
+    ensure_runtime_env
+    local profile_args
+    profile_args=$(get_profile_args)
+    echo "[Shoply] 正在安全重启服务 (重新加载 .env 配置与容器编排)..."
+
+    # 先停用所有可能运行的容器 profile (包含内置 mysql/redis)，确保变更被彻底重置
+    $COMPOSE_CMD --profile mysql --profile redis down 2>/dev/null || $COMPOSE_CMD down 2>/dev/null || true
+    # 强制重建并拉起符合最新 .env 配置的服务
+    $COMPOSE_CMD $profile_args up -d --force-recreate
+
+    echo ""
+    echo "[Shoply] 🚀 服务重启成功！"
+    print_service_endpoints
+}
+
+# 10. 命令路由
 case "$1" in
     init|config)
         interactive_setup
+        if [ -t 0 ]; then
+            read -r -p "配置已保存。是否立即重启/启动服务以使新配置生效？ [Y/n]: " input_restart
+            input_restart=${input_restart:-Y}
+            if [[ "$input_restart" =~ ^[Yy]$ ]]; then
+                restart_service
+            else
+                echo "[Shoply] 提示: 您可以随时执行 './shoply.sh restart' 或 './shoply.sh start' 启动服务。"
+            fi
+        else
+            echo "[Shoply] 提示: 配置已保存，执行 './shoply.sh restart' 即可使新配置生效。"
+        fi
         ;;
     start|up)
-        if [ ! -f ".env" ]; then
-            interactive_setup
-        fi
-
-        # 1. 预先以宿主机当前用户身份创建所有持久化挂载目录，杜绝 Docker(root)/Podman 卷权限冲突
-        mkdir -p data config public/uploads runtime data/theme-releases plugins/app
-
-        # 2. 若检测到以非 root 用户使用 Podman (Rootless)，检查并启用用户会话常驻 (Linger)
-        if [[ "$COMPOSE_CMD" == *"podman"* ]] && [ "$(id -u)" -ne 0 ]; then
-            if command -v loginctl >/dev/null 2>&1; then
-                if ! loginctl show-user "$USER" 2>/dev/null | grep -q "Linger=yes"; then
-                    loginctl enable-linger "$USER" 2>/dev/null || echo "[Shoply] 提示: 建议执行 'loginctl enable-linger \$USER' 以确保 SSH 会话断开后 Podman 容器持续常驻后台。"
-                fi
-            fi
-        fi
-
-        PROFILE_ARGS=$(get_profile_args)
-        echo "[Shoply] 正在启动服务 (使用: $COMPOSE_CMD $PROFILE_ARGS)..."
-        $COMPOSE_CMD $PROFILE_ARGS up -d
-        echo ""
-        echo "[Shoply] 🚀 服务启动成功！"
-        echo "[Shoply] 前台入口: http://localhost:5490"
-        echo "[Shoply] 管理后台: http://localhost:5490/admin/"
-        echo "[Shoply] 登录账号: admin@shoply.page"
+        start_service
         ;;
     stop|down)
         PROFILE_ARGS=$(get_profile_args)
@@ -700,10 +758,7 @@ case "$1" in
         echo "[Shoply] 服务已停止。"
         ;;
     restart)
-        PROFILE_ARGS=$(get_profile_args)
-        echo "[Shoply] 正在重启服务..."
-        $COMPOSE_CMD $PROFILE_ARGS restart
-        echo "[Shoply] 服务已重启。"
+        restart_service
         ;;
     status|ps)
         PROFILE_ARGS=$(get_profile_args)
@@ -729,9 +784,9 @@ case "$1" in
         echo ""
         echo "常用命令:"
         echo "  start     启动服务（若未初始化会自动启动智能检测与向导）"
-        echo "  init      重新运行配置向导生成 .env 配置"
+        echo "  init      重新运行配置向导生成 .env 配置，并提示重启生效"
         echo "  stop      停止并移除当前容器"
-        echo "  restart   重启所有服务"
+        echo "  restart   安全重启所有服务（自动重载 .env 与服务配置）"
         echo "  status    查看各服务运行状态"
         echo "  logs      跟踪实时日志 (例: ./scripts/shoply.sh logs)"
         echo "  update    一键检查并在线平滑升级应用 (支持版本指定与自动回滚)"

@@ -42,20 +42,23 @@ cd shoply
 
 ## 🛠️ 运维与管理命令
 
-通过便捷管理脚本 `./scripts/shoply.sh`：
+通过根目录便捷管理脚本 `./shoply.sh`（或 `./scripts/shoply.sh`）：
 
 ```bash
-# 启动所有服务 (后台守护进程)
-./scripts/shoply.sh start
+# 启动所有服务 (后台守护进程，未初始化时自动进入交互向导)
+./shoply.sh start
+
+# 重新运行配置向导修改 .env，并在完成后提示立即重启生效
+./shoply.sh init
 
 # 停止并移除容器
-./scripts/shoply.sh stop
+./shoply.sh stop
 
-# 重启所有服务
-./scripts/shoply.sh restart
+# 安全重启所有服务 (彻底重新加载 .env 变量、服务配置与 Profile 编排)
+./shoply.sh restart
 
 # 查看服务运行状态
-./scripts/shoply.sh status
+./shoply.sh status
 
 # 跟踪查看主服务实时日志
 ./scripts/shoply.sh logs
