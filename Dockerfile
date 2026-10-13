@@ -23,10 +23,10 @@ RUN set -eux; \
     fi; \
     apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS linux-headers \
-        freetype-dev icu-dev libjpeg-turbo-dev libpng-dev libwebp-dev libzip-dev zlib-dev; \
+        freetype-dev icu-dev libjpeg-turbo-dev libpng-dev libwebp-dev libzip-dev libpq-dev zlib-dev; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
     docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" \
-        bcmath gd intl opcache pcntl pdo_mysql sockets zip; \
+        bcmath gd intl opcache pcntl pdo_mysql pdo_pgsql sockets zip; \
     pecl install "protobuf-${PROTOBUF_VERSION}"; \
     docker-php-ext-enable protobuf; \
     # 只保留扩展实际链接的共享库，与官方 PHP 镜像的做法一致
@@ -40,6 +40,7 @@ RUN set -eux; \
     rm -rf /tmp/pear ~/.pearrc /usr/local/lib/php/test /usr/local/lib/php/doc; \
     apk add --no-cache bash nodejs python3 tzdata; \
     php -m | grep -qi '^protobuf$'; \
+    php -r 'foreach (["mysql", "pgsql"] as $driver) { if (!in_array($driver, PDO::getAvailableDrivers(), true)) { exit(1); } }'; \
     node -v
 
 COPY --from=composer /usr/bin/composer /usr/bin/composer
