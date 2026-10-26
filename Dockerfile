@@ -38,7 +38,8 @@ RUN set -eux; \
     apk add --no-cache --virtual .shoply-phpext-rundeps $runDeps; \
     apk del --no-network .build-deps; \
     rm -rf /tmp/pear ~/.pearrc /usr/local/lib/php/test /usr/local/lib/php/doc; \
-    apk add --no-cache bash nodejs python3 tzdata; \
+    # purego (webp 动态加载) 产生 libc/libdl 动态链接，引入 gcompat 兼容层保证 Alpine 正常执行
+    apk add --no-cache bash gcompat nodejs tzdata; \
     php -m | grep -qi '^protobuf$'; \
     php -r 'foreach (["mysql", "pgsql"] as $driver) { if (!in_array($driver, PDO::getAvailableDrivers(), true)) { exit(1); } }'; \
     node -v
@@ -63,16 +64,14 @@ WORKDIR /build
 RUN apk add --no-cache npm && npm install --global yarn@1.22.22
 COPY scripts/theme-builder/package.json ./package.json
 COPY site/yarn.lock ./yarn.lock
-RUN yarn install --production --frozen-lockfile --non-interactive
+RUN yarn install --production --non-interactive && \
+    find /build/node_modules \( -name "*.d.ts" -o -name "*.d.mts" -o -name "*.d.cts" -o -name "*.map" -o -iname "README*" -o -iname "CHANGELOG*" -o -iname "HISTORY*" \) -type f -delete
 
 # ==========================================
 # 最终运行镜像
 # ==========================================
 FROM runtime
 ARG SHOPLY_BINARY=dist/shoply-linux-amd64
-
-# purego (webp 动态加载) 产生 libc/libdl 动态链接，引入 gcompat 兼容层保证 Alpine 正常执行
-RUN apk add --no-cache gcompat
 
 WORKDIR /var/www/shoply
 
@@ -86,9 +85,7 @@ COPY template ./template
 COPY dist/admin ./dist/admin
 COPY dist/site ./dist/site
 COPY public ./public
-COPY --from=theme-builder /build/package.json ./site/package.json
-COPY --from=theme-builder /build/yarn.lock ./site/yarn.lock
-COPY --from=theme-builder /build/node_modules ./site/node_modules
+COPY --from=theme-builder /build ./site
 COPY scripts/theme-builder/package.json ./scripts/theme-builder/package.json
 COPY scripts/build-ai-decor-theme.mjs ./scripts/build-ai-decor-theme.mjs
 COPY scripts/lib/resolve-ts.mjs scripts/lib/ai-decor-modules.mjs scripts/lib/theme-decor-files.mjs ./scripts/lib/
@@ -97,9 +94,10 @@ COPY ai-decor/src ./ai-decor/src
 # 3. 复制容器入口脚本并赋予执行权限
 COPY --chmod=755 scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# 4. 预创建运行态与挂载点目录，并备份内置应用插件供宿主机挂载时自愈释放
-RUN mkdir -p data config platform runtime tenant public/uploads && \
-    cp -r plugins/app /var/www/shoply/.builtin-plugins-app
+# 4. 预创建运行态与挂载点目录，并备份内置应用插件与官方主题源码供宿主机挂载时自愈释放
+RUN mkdir -p data config runtime public/uploads && \
+    cp -r plugins/app /var/www/shoply/.builtin-plugins-app && \
+    cp -r template/themes /var/www/shoply/.builtin-template-themes
 
 EXPOSE 5490
 
