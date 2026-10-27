@@ -152,16 +152,20 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# 2. 检测网络镜像源优先级 (国内优先 GitCode，海外优先 GitHub)
+# 2. 检测网络镜像源优先级 (国内优先官方 CDN / GitCode，海外优先 GitHub)
 detect_mirror_priority() {
     if [ -n "$SHOPLY_MIRROR" ]; then
         case "$SHOPLY_MIRROR" in
+            cdn)
+                echo "cdn gitcode github"
+                return
+                ;;
             gitcode|cn|gitee)
-                echo "gitcode github"
+                echo "gitcode cdn github"
                 return
                 ;;
             github|global|intl)
-                echo "github gitcode"
+                echo "github cdn gitcode"
                 return
                 ;;
         esac
@@ -174,9 +178,9 @@ detect_mirror_priority() {
     fi
 
     if [ "$is_cn" -eq 1 ]; then
-        echo "gitcode github"
+        echo "cdn gitcode github"
     else
-        echo "github gitcode"
+        echo "github cdn gitcode"
     fi
 }
 
@@ -184,7 +188,9 @@ detect_mirror_priority() {
 resolve_latest_tag() {
     local source="$1"
     local api_url=""
-    if [ "$source" = "gitcode" ]; then
+    if [ "$source" = "cdn" ]; then
+        api_url="https://cdn.shoply.page/container/releases.json"
+    elif [ "$source" = "gitcode" ]; then
         api_url="https://api.gitcode.com/api/v5/repos/hoxiai/shoply/releases/latest"
     elif [ "$source" = "github" ]; then
         api_url="https://api.github.com/repos/hoxiai/shoply/releases/latest"
@@ -563,7 +569,10 @@ else
     DOWNLOAD_OK=false
     MIRROR_SOURCES=$(detect_mirror_priority)
     for src in $MIRROR_SOURCES; do
-        if [ "$src" = "gitcode" ]; then
+        if [ "$src" = "cdn" ]; then
+            PLAIN_VER="${TARGET_TAG#v}"
+            DOWNLOAD_URL="https://cdn.shoply.page/container/${PLAIN_VER}/shoply-${PLAIN_VER}-${OS}-${ARCH}.tar.gz"
+        elif [ "$src" = "gitcode" ]; then
             DOWNLOAD_URL="https://gitcode.com/hoxiai/shoply/releases/download/${TARGET_TAG}/${TARBALL_NAME}"
         else
             DOWNLOAD_URL="https://github.com/hoxiai/shoply/releases/download/${TARGET_TAG}/${TARBALL_NAME}"
