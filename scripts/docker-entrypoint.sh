@@ -39,37 +39,170 @@ case "${1##*/}" in
     *) exec "$@" ;;
 esac
 
-# 0. 初始化必要目录；plugins/app 通常是宿主机挂载，内置应用以镜像为准：
-#    缺失时释放，版本与镜像不一致时整体替换（镜像升级或回滚都会跟随）。
-mkdir -p public/uploads data config runtime plugins/app
+# 0. 初始化必要目录；plugins/app 与 template/themes 通常是宿主机挂载：
+#    - 若 data/system-release/current 存在高于镜像版本的在线更新包，优先自愈恢复（保证容器重启或重建后不还原）
+#    - 内置应用与官方主题缺失时释放，仅在镜像版本高于已安装版本时升级覆盖（保留在线热更的高版本与源码检出）。
+mkdir -p public/uploads data config runtime plugins/app template/themes
 
-builtin_apps_dir=/var/www/shoply/.builtin-plugins-app
+version_gt() {
+    local v1="${1#v}"
+    local v2="${2#v}"
+    v1="${v1#V}"
+    v2="${v2#V}"
+    v1="${v1%%+*}"
+    v2="${v2%%+*}"
+    [ -n "$v1" ] || return 1
+    [ -n "$v2" ] || return 0
+    [ "$v1" = "$v2" ] && return 1
+    awk -v v1="$v1" -v v2="$v2" '
+        function cmp_id(a, b,    pa, pb, na, nb) {
+            if (a == b) return 0
+            if (a ~ /^[0-9]+$/ && b ~ /^[0-9]+$/) {
+                return ((a + 0) > (b + 0)) ? 1 : (((a + 0) < (b + 0)) ? -1 : 0)
+            }
+            if (a ~ /^[0-9]+$/) return -1
+            if (b ~ /^[0-9]+$/) return 1
+            if (match(a, /[0-9]+$/) && RSTART > 1) {
+                pa = substr(a, 1, RSTART - 1)
+                na = substr(a, RSTART) + 0
+                if (match(b, /[0-9]+$/) && RSTART > 1) {
+                    pb = substr(b, 1, RSTART - 1)
+                    nb = substr(b, RSTART) + 0
+                    if (pa == pb) {
+                        return (na > nb) ? 1 : ((na < nb) ? -1 : 0)
+                    }
+                }
+            }
+            return (a > b) ? 1 : -1
+        }
+        BEGIN {
+            idx1 = index(v1, "-")
+            if (idx1 > 0) { m1 = substr(v1, 1, idx1 - 1); p1 = substr(v1, idx1 + 1) } else { m1 = v1; p1 = "" }
+            idx2 = index(v2, "-")
+            if (idx2 > 0) { m2 = substr(v2, 1, idx2 - 1); p2 = substr(v2, idx2 + 1) } else { m2 = v2; p2 = "" }
+
+            n1 = split(m1, a1, ".")
+            n2 = split(m2, a2, ".")
+            maxm = (n1 > n2) ? n1 : n2
+            for (i = 1; i <= maxm; i++) {
+                x1 = (i <= n1) ? (a1[i] + 0) : 0
+                x2 = (i <= n2) ? (a2[i] + 0) : 0
+                if (x1 > x2) exit 0
+                if (x1 < x2) exit 1
+            }
+
+            if (p1 == "" && p2 == "") exit 1
+            if (p1 == "" && p2 != "") exit 0
+            if (p1 != "" && p2 == "") exit 1
+
+            np1 = split(p1, b1, /[.-]/)
+            np2 = split(p2, b2, /[.-]/)
+            minp = (np1 < np2) ? np1 : np2
+            for (i = 1; i <= minp; i++) {
+                c = cmp_id(b1[i], b2[i])
+                if (c > 0) exit 0
+                if (c < 0) exit 1
+            }
+            if (np1 > np2) exit 0
+            exit 1
+        }
+    '
+}
+
 app_version() {
     sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1/app.json" 2>/dev/null | head -n 1
 }
-if [ -d "$builtin_apps_dir" ]; then
-    for builtin_app in "$builtin_apps_dir"/*/; do
-        builtin_app="${builtin_app%/}"
-        [ -d "$builtin_app" ] || continue
-        app_name="${builtin_app##*/}"
-        app_target="plugins/app/$app_name"
-        image_version="$(app_version "$builtin_app")"
+
+theme_version() {
+    sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1/theme-package.json" 2>/dev/null | head -n 1
+}
+
+sync_apps_from_dir() {
+    local src_apps_dir="$1"
+    [ -d "$src_apps_dir" ] || return 0
+    for src_app in "$src_apps_dir"/*/; do
+        src_app="${src_app%/}"
+        [ -d "$src_app" ] || continue
+        local app_name="${src_app##*/}"
+        local app_target="plugins/app/$app_name"
+        local src_ver
+        src_ver="$(app_version "$src_app")"
         if [ ! -d "$app_target" ]; then
-            echo "[Shoply] Installing built-in application $app_name $image_version"
-            cp -r "$builtin_app" "$app_target"
-        elif [ "$(app_version "$app_target")" != "$image_version" ]; then
+            echo "[Shoply] Installing built-in application $app_name $src_ver"
+            cp -r "$src_app" "$app_target"
+        elif [ -n "$src_ver" ] && version_gt "$src_ver" "$(app_version "$app_target")"; then
             if [ -e "$app_target/.git" ]; then
-                echo "[Shoply] WARNING: $app_target is a source checkout; keeping it instead of image version $image_version" >&2
+                echo "[Shoply] WARNING: $app_target is a source checkout; keeping it instead of version $src_ver" >&2
                 continue
             fi
-            echo "[Shoply] Replacing built-in application $app_name with image version $image_version"
+            echo "[Shoply] Upgrading built-in application $app_name to version $src_ver"
             rm -rf "$app_target.next"
-            cp -r "$builtin_app" "$app_target.next"
+            cp -r "$src_app" "$app_target.next"
             rm -rf "$app_target"
             mv "$app_target.next" "$app_target"
         fi
     done
+}
+
+sync_themes_from_dir() {
+    local src_themes_dir="$1"
+    [ -d "$src_themes_dir" ] || return 0
+    for src_theme in "$src_themes_dir"/*/; do
+        src_theme="${src_theme%/}"
+        [ -d "$src_theme" ] || continue
+        local theme_name="${src_theme##*/}"
+        local theme_target="template/themes/$theme_name"
+        local src_theme_ver
+        src_theme_ver="$(theme_version "$src_theme")"
+        if [ ! -f "$theme_target/theme-package.json" ]; then
+            echo "[Shoply] Installing built-in theme $theme_name $src_theme_ver"
+            rm -rf "$theme_target.next"
+            cp -r "$src_theme" "$theme_target.next"
+            rm -rf "$theme_target"
+            mv "$theme_target.next" "$theme_target"
+        elif [ -n "$src_theme_ver" ] && version_gt "$src_theme_ver" "$(theme_version "$theme_target")"; then
+            if [ -e "$theme_target/.git" ]; then
+                echo "[Shoply] WARNING: $theme_target is a source checkout; keeping it instead of version $src_theme_ver" >&2
+                continue
+            fi
+            echo "[Shoply] Upgrading built-in theme $theme_name to version $src_theme_ver"
+            rm -rf "$theme_target.next"
+            cp -r "$src_theme" "$theme_target.next"
+            rm -rf "$theme_target"
+            mv "$theme_target.next" "$theme_target"
+        fi
+    done
+}
+
+# 0.1 自愈恢复持久化在线系统更新 (data/system-release/current)
+persisted_release_dir="data/system-release/current"
+if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shoply" ]; then
+    persisted_sys_ver="$(tr -d '[:space:]' < "$persisted_release_dir/VERSION" 2>/dev/null || true)"
+    image_sys_ver=""
+    if [ -f "VERSION" ]; then
+        image_sys_ver="$(tr -d '[:space:]' < "VERSION" 2>/dev/null || true)"
+    fi
+    if [ -n "$persisted_sys_ver" ] && version_gt "$persisted_sys_ver" "$image_sys_ver"; then
+        echo "[Shoply] Restoring persisted online system update $persisted_sys_ver from $persisted_release_dir"
+        cp "$persisted_release_dir/shoply" "./shoply.next"
+        chmod 755 "./shoply.next"
+        mv "./shoply.next" "./shoply"
+        cp "$persisted_release_dir/VERSION" "./VERSION"
+        for sub in dist resource ai-decor scripts; do
+            if [ -d "$persisted_release_dir/$sub" ]; then
+                rm -rf "./$sub.next"
+                cp -r "$persisted_release_dir/$sub" "./$sub.next"
+                rm -rf "./$sub"
+                mv "./$sub.next" "./$sub"
+            fi
+        done
+        sync_apps_from_dir "$persisted_release_dir/plugins/app"
+        sync_themes_from_dir "$persisted_release_dir/template/themes"
+    fi
 fi
+
+sync_apps_from_dir "/var/www/shoply/.builtin-plugins-app"
+sync_themes_from_dir "/var/www/shoply/.builtin-template-themes"
 
 # 等待 TCP 端口就绪工具函数
 wait_for_port() {
