@@ -34,8 +34,8 @@ services:
       # 只信任这些来源的 X-Forwarded-For。代理不在私网时改成代理的实际 IP/CIDR。
       - SHOPARK_HTTP_TRUSTED_PROXIES=${SHOPARK_HTTP_TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
       # 官方应用与主题市场接口
-      - SHOPARK_OFFICIAL_API_URL=${SHOPARK_OFFICIAL_API_URL:-https://shopark.ai}
-      - SHOPARK_REGISTRY_URL=${SHOPARK_REGISTRY_URL:-https://shopark.ai}
+      - SHOPARK_OFFICIAL_API_URL=${SHOPARK_OFFICIAL_API_URL:-https://hoxi.dev}
+      - SHOPARK_REGISTRY_URL=${SHOPARK_REGISTRY_URL:-https://hoxi.dev}
     volumes:
       - ./config:/var/www/shopark/config:Z
       - ./data:/var/www/shopark/data:Z

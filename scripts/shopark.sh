@@ -600,39 +600,39 @@ interactive_setup() {
 # ========================================================
 
 # 容器镜像配置
-SHOPLY_IMAGE_REGISTRY=crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com
-SHOPLY_IMAGE_NAME=hoxiai/shopark
-SHOPLY_VERSION=latest
-SHOPLY_HTTP_PORT=5490
+SHOPARK_IMAGE_REGISTRY=crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com
+SHOPARK_IMAGE_NAME=hoxiai/shopark
+SHOPARK_VERSION=latest
+SHOPARK_HTTP_PORT=5490
 
 # 架构与服务开关 (控制是否启动内置容器)
 USE_EMBEDDED_MYSQL=${use_embedded_mysql}
 USE_EMBEDDED_REDIS=${use_embedded_redis}
 
 # 数据库配置
-SHOPLY_DB_DRIVER=mysql
-SHOPLY_DB_HOST=${db_host}
-SHOPLY_DB_PORT=${db_port}
-SHOPLY_DB_DATABASE=${db_name}
-SHOPLY_DB_USERNAME=${db_user}
-SHOPLY_DB_PASSWORD=${db_pass}
-SHOPLY_MYSQL_ROOT_PASSWORD=${mysql_root_pass}
+SHOPARK_DB_DRIVER=mysql
+SHOPARK_DB_HOST=${db_host}
+SHOPARK_DB_PORT=${db_port}
+SHOPARK_DB_DATABASE=${db_name}
+SHOPARK_DB_USERNAME=${db_user}
+SHOPARK_DB_PASSWORD=${db_pass}
+SHOPARK_MYSQL_ROOT_PASSWORD=${mysql_root_pass}
 
 # 缓存配置
-SHOPLY_REDIS_ADDR=${redis_addr}
-SHOPLY_REDIS_PASSWORD=${redis_pass}
-SHOPLY_REDIS_DB=0
+SHOPARK_REDIS_ADDR=${redis_addr}
+SHOPARK_REDIS_PASSWORD=${redis_pass}
+SHOPARK_REDIS_DB=0
 
 # 站点与超级管理员
-SHOPLY_STORE_NAME=Shopark Store
-SHOPLY_SITE_URL=http://localhost:5490
-SHOPLY_SITE_EMAIL=admin@shopark.ai
-SHOPLY_SITE_PASSWORD=${admin_pwd}
+SHOPARK_STORE_NAME=Shopark Store
+SHOPARK_SITE_URL=http://localhost:5490
+SHOPARK_SITE_EMAIL=admin@shopark.ai
+SHOPARK_SITE_PASSWORD=${admin_pwd}
 
 # 安全密钥
-SHOPLY_JWT_SIGN_KEY=${jwt_sign_key}
-SHOPLY_JWT_SECRET_KEY=${jwt_secret_key}
-SHOPLY_JWT_ADMIN_PERMISSION_MODE=enforce
+SHOPARK_JWT_SIGN_KEY=${jwt_sign_key}
+SHOPARK_JWT_SECRET_KEY=${jwt_secret_key}
+SHOPARK_JWT_ADMIN_PERMISSION_MODE=enforce
 EOF
 
     echo "========================================================"
@@ -684,10 +684,10 @@ print_service_endpoints() {
     local admin_email="admin@shopark.ai"
     if [ -f ".env" ]; then
         local p
-        p=$(grep -E "^SHOPLY_HTTP_PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
+        p=$(grep -E "^SHOPARK_HTTP_PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
         [ -n "$p" ] && http_port="$p"
         local e
-        e=$(grep -E "^SHOPLY_SITE_EMAIL=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
+        e=$(grep -E "^SHOPARK_SITE_EMAIL=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
         [ -n "$e" ] && admin_email="$e"
     fi
     echo "[Shopark] 前台入口: http://localhost:${http_port}"

@@ -187,9 +187,12 @@ if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shopa
         cp "$persisted_release_dir/shopark" "./shopark.next"
         chmod 755 "./shopark.next"
         mv "./shopark.next" "./shopark"
-        cp "$persisted_release_dir/VERSION" "./VERSION"
-        for sub in dist resource ai-decor scripts; do
-            if [ -d "$persisted_release_dir/$sub" ]; then
+        for sub in dist resource ai-decor scripts site \
+            plugins/src plugins/common plugins/vendor plugins/composer.json plugins/composer.lock \
+            plugins/shopark plugins/tcp-worker.php plugins/psr-worker.php \
+            template/common public/favicon.svg public/icon.svg public/logo.svg public/logo-inverse.svg; do
+            if [ -d "$persisted_release_dir/$sub" ] || [ -f "$persisted_release_dir/$sub" ]; then
+                mkdir -p "$(dirname "./$sub")"
                 rm -rf "./$sub.next"
                 cp -r "$persisted_release_dir/$sub" "./$sub.next"
                 rm -rf "./$sub"
@@ -198,6 +201,8 @@ if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shopa
         done
         sync_apps_from_dir "$persisted_release_dir/plugins/app"
         sync_themes_from_dir "$persisted_release_dir/template/themes"
+        # Commit the version last so an interrupted restore is retried at startup.
+        cp "$persisted_release_dir/VERSION" "./VERSION"
     fi
 fi
 
