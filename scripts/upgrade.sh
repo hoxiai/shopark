@@ -2,7 +2,7 @@
 set -e
 
 # ========================================================
-# Shoply 官方在线升级与自动回滚工具 (Upgrade & Rollback)
+# Shopark 官方在线升级与自动回滚工具 (Upgrade & Rollback)
 # 支持 Docker / Podman 容器模式 与 独立二进制模式
 # ========================================================
 
@@ -18,19 +18,19 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 log_info() {
-    echo -e "${BLUE}[Shoply]${NC} $1"
+    echo -e "${BLUE}[Shopark]${NC} $1"
 }
 
 log_success() {
-    echo -e "${GREEN}[Shoply] ✔️${NC} $1"
+    echo -e "${GREEN}[Shopark] ✔️${NC} $1"
 }
 
 log_warn() {
-    echo -e "${YELLOW}[Shoply] ⚠️${NC} $1"
+    echo -e "${YELLOW}[Shopark] ⚠️${NC} $1"
 }
 
 log_error() {
-    echo -e "${RED}[Shoply] ❌ 错误:${NC} $1" >&2
+    echo -e "${RED}[Shopark] ❌ 错误:${NC} $1" >&2
 }
 
 # 锁机制，防止并发升级冲突
@@ -62,12 +62,12 @@ CHECK_ONLY=false
 BACKUP_ONLY=false
 DO_ROLLBACK=false
 AUTO_YES=false
-SHOPLY_MIRROR=""
+SHOPARK_MIRROR=""
 TEMP_DIR=""
 
 show_help() {
     echo "========================================================"
-    echo "       Shoply 官方在线更新工具 (scripts/upgrade.sh)"
+    echo "       Shopark 官方在线更新工具 (scripts/upgrade.sh)"
     echo "========================================================"
     echo ""
     echo "用法:"
@@ -123,15 +123,15 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         --mirror=*)
-            SHOPLY_MIRROR="${1#*=}"
+            SHOPARK_MIRROR="${1#*=}"
             shift
             ;;
         --gitcode|--cn)
-            SHOPLY_MIRROR="gitcode"
+            SHOPARK_MIRROR="gitcode"
             shift
             ;;
         --github|--intl)
-            SHOPLY_MIRROR="github"
+            SHOPARK_MIRROR="github"
             shift
             ;;
         --mode=*)
@@ -154,8 +154,8 @@ done
 
 # 2. 检测网络镜像源优先级 (国内优先官方 CDN / GitCode，海外优先 GitHub)
 detect_mirror_priority() {
-    if [ -n "$SHOPLY_MIRROR" ]; then
-        case "$SHOPLY_MIRROR" in
+    if [ -n "$SHOPARK_MIRROR" ]; then
+        case "$SHOPARK_MIRROR" in
             cdn)
                 echo "cdn gitcode github"
                 return
@@ -189,11 +189,11 @@ resolve_latest_tag() {
     local source="$1"
     local api_url=""
     if [ "$source" = "cdn" ]; then
-        api_url="https://cdn.shoply.page/container/releases.json"
+        api_url="https://cdn.hoxi.dev/shopark/container/releases.json"
     elif [ "$source" = "gitcode" ]; then
-        api_url="https://api.gitcode.com/api/v5/repos/hoxiai/shoply/releases/latest"
+        api_url="https://api.gitcode.com/api/v5/repos/hoxiai/shopark/releases/latest"
     elif [ "$source" = "github" ]; then
-        api_url="https://api.github.com/repos/hoxiai/shoply/releases/latest"
+        api_url="https://api.github.com/repos/hoxiai/shopark/releases/latest"
     fi
 
     local resp=""
@@ -226,7 +226,7 @@ COMPOSE_CMD=$(detect_compose)
 if [ "$MODE" = "auto" ]; then
     if [ -n "$COMPOSE_CMD" ] && [ -f "docker-compose.yml" ]; then
         MODE="container"
-    elif [ -f "shoply" ] || [ -f "shoply-linux-amd64" ] || [ -f "shoply-linux-arm64" ]; then
+    elif [ -f "shopark" ] || [ -f "shopark-linux-amd64" ] || [ -f "shopark-linux-arm64" ]; then
         MODE="binary"
     else
         MODE="container"
@@ -304,13 +304,13 @@ do_rollback() {
         log_info "正在重新拉起回滚版本的容器..."
         local rollback_profile_args
         rollback_profile_args=$(get_profile_args)
-        $COMPOSE_CMD $rollback_profile_args up -d --force-recreate shoply
+        $COMPOSE_CMD $rollback_profile_args up -d --force-recreate shopark
         log_success "容器回滚拉起完成！"
 
         # 回滚服务就绪探测
         local http_port="5490"
         if [ -f ".env" ]; then
-            http_port=$(grep -E "^SHOPLY_HTTP_PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || echo "5490")
+            http_port=$(grep -E "^SHOPARK_HTTP_PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || echo "5490")
         fi
         http_port="${http_port:-5490}"
         log_info "正在验证回滚后服务就绪状态 (循环探测 http://127.0.0.1:${http_port}) ..."
@@ -328,17 +328,17 @@ do_rollback() {
         if [ "$probe_ok" = true ]; then
             log_success "回滚版本健康探测通过！"
         else
-            log_warn "服务尚未响应，建议检查日志: $COMPOSE_CMD logs shoply"
+            log_warn "服务尚未响应，建议检查日志: $COMPOSE_CMD logs shopark"
         fi
     else
         # 二进制模式回滚
-        if [ -f "$backup_dir/shoply" ]; then
-            cp -f "$backup_dir/shoply" ./shoply
-            chmod +x ./shoply
+        if [ -f "$backup_dir/shopark" ]; then
+            cp -f "$backup_dir/shopark" ./shopark
+            chmod +x ./shopark
         fi
-        if [ -f "$backup_dir/shoply-prepare" ]; then
-            cp -f "$backup_dir/shoply-prepare" ./shoply-prepare
-            chmod +x ./shoply-prepare
+        if [ -f "$backup_dir/shopark-prepare" ]; then
+            cp -f "$backup_dir/shopark-prepare" ./shopark-prepare
+            chmod +x ./shopark-prepare
         fi
         for dir in plugins resource template; do
             if [ -d "$backup_dir/$dir" ]; then
@@ -347,11 +347,11 @@ do_rollback() {
             fi
         done
         log_success "文件已恢复至旧版状态。"
-        if command -v systemctl >/dev/null 2>&1 && systemctl is-active shoply >/dev/null 2>&1; then
-            systemctl restart shoply
-            log_success "已平滑重启 shoply.service"
+        if command -v systemctl >/dev/null 2>&1 && systemctl is-active shopark >/dev/null 2>&1; then
+            systemctl restart shopark
+            log_success "已平滑重启 shopark.service"
         else
-            log_warn "请重启您的 Shoply 服务进程以应用回滚。"
+            log_warn "请重启您的 Shopark 服务进程以应用回滚。"
         fi
     fi
 
@@ -367,14 +367,14 @@ fi
 acquire_lock
 
 echo "========================================================"
-echo "         Shoply 在线升级系统 (Mode: $MODE)"
+echo "         Shopark 在线升级系统 (Mode: $MODE)"
 echo "========================================================"
 echo ""
 
 # 步骤 7.1：查询当前版本
 CURRENT_VERSION="latest"
 if [ -f ".env" ]; then
-    CURRENT_VERSION=$(grep -E "^SHOPLY_VERSION=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || echo "latest")
+    CURRENT_VERSION=$(grep -E "^SHOPARK_VERSION=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || echo "latest")
 elif [ -f ".version" ]; then
     CURRENT_VERSION=$(cat .version 2>/dev/null | tr -d ' "\r\n')
 fi
@@ -427,11 +427,11 @@ if [ "$MODE" = "container" ]; then
         cp -r config "$BACKUP_DIR/config"
     fi
 else
-    if [ -f "shoply" ]; then
-        cp shoply "$BACKUP_DIR/shoply"
+    if [ -f "shopark" ]; then
+        cp shopark "$BACKUP_DIR/shopark"
     fi
-    if [ -f "shoply-prepare" ]; then
-        cp shoply-prepare "$BACKUP_DIR/shoply-prepare"
+    if [ -f "shopark-prepare" ]; then
+        cp shopark-prepare "$BACKUP_DIR/shopark-prepare"
     fi
     for dir in plugins resource template; do
         if [ -d "$dir" ]; then
@@ -479,15 +479,15 @@ if [ "$MODE" = "container" ]; then
 
     # 1. 更新 .env 中的版本号
     if [ -f ".env" ]; then
-        if grep -q "^SHOPLY_VERSION=" .env; then
+        if grep -q "^SHOPARK_VERSION=" .env; then
             # 兼容 Linux / macOS sed 替换
             if sed --version >/dev/null 2>&1; then
-                sed -i "s/^SHOPLY_VERSION=.*/SHOPLY_VERSION=${TARGET_TAG}/" .env
+                sed -i "s/^SHOPARK_VERSION=.*/SHOPARK_VERSION=${TARGET_TAG}/" .env
             else
-                sed -i '' "s/^SHOPLY_VERSION=.*/SHOPLY_VERSION=${TARGET_TAG}/" .env
+                sed -i '' "s/^SHOPARK_VERSION=.*/SHOPARK_VERSION=${TARGET_TAG}/" .env
             fi
         else
-            echo "SHOPLY_VERSION=${TARGET_TAG}" >> .env
+            echo "SHOPARK_VERSION=${TARGET_TAG}" >> .env
         fi
     fi
 
@@ -499,7 +499,7 @@ if [ "$MODE" = "container" ]; then
 
     # 3. 拉取新镜像
     log_info "正在拉取最新容器镜像: ${TARGET_TAG} ..."
-    if ! $COMPOSE_CMD $PROFILE_ARGS pull shoply; then
+    if ! $COMPOSE_CMD $PROFILE_ARGS pull shopark; then
         log_error "镜像拉取失败！正在恢复原配置..."
         if [ -f "$BACKUP_DIR/.env" ]; then
             cp -f "$BACKUP_DIR/.env" .env
@@ -507,15 +507,15 @@ if [ "$MODE" = "container" ]; then
         exit 1
     fi
 
-    # 4. 预先创建挂载目录并平滑更新拉起容器（entrypoint 自动运行 shoply prepare 和 PHP 迁移）
+    # 4. 预先创建挂载目录并平滑更新拉起容器（entrypoint 自动运行 shopark prepare 和 PHP 迁移）
     mkdir -p data config public/uploads runtime data/theme-releases plugins/app
-    log_info "正在平滑重建并启动 Shoply 应用容器..."
-    $COMPOSE_CMD $PROFILE_ARGS up -d --force-recreate shoply
+    log_info "正在平滑重建并启动 Shopark 应用容器..."
+    $COMPOSE_CMD $PROFILE_ARGS up -d --force-recreate shopark
 
     # 5. 服务就绪探测 (Health Check Probe)
     HTTP_PORT=5490
     if [ -f ".env" ]; then
-        HTTP_PORT=$(grep -E "^SHOPLY_HTTP_PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || echo "5490")
+        HTTP_PORT=$(grep -E "^SHOPARK_HTTP_PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || echo "5490")
     fi
     HTTP_PORT="${HTTP_PORT:-5490}"
 
@@ -533,7 +533,7 @@ if [ "$MODE" = "container" ]; then
     echo ""
 
     if [ "$PROBE_SUCCESS" = true ]; then
-        log_success "🎉 恭喜！Shoply 系统在线平滑升级成功！"
+        log_success "🎉 恭喜！Shopark 系统在线平滑升级成功！"
         echo "========================================================"
         echo "  当前版本: ${CYAN}${TARGET_TAG}${NC}"
         echo "  前台地址: http://localhost:${HTTP_PORT}"
@@ -542,7 +542,7 @@ if [ "$MODE" = "container" ]; then
     else
         log_error "升级后服务健康探测超时！"
         log_warn "打印容器最近 30 行日志辅助排查:"
-        $COMPOSE_CMD $PROFILE_ARGS logs --tail=30 shoply || true
+        $COMPOSE_CMD $PROFILE_ARGS logs --tail=30 shopark || true
         log_warn "如需立即回滚到升级前版本，请执行: bash scripts/upgrade.sh --rollback"
         exit 1
     fi
@@ -561,8 +561,8 @@ else
             ;;
     esac
 
-    TARBALL_NAME="shoply-${TARGET_TAG}-${OS}-${ARCH}.tar.gz"
-    TEMP_DIR=$(mktemp -d -t shoply-upgrade-XXXXXX 2>/dev/null || mktemp -d)
+    TARBALL_NAME="shopark-${TARGET_TAG}-${OS}-${ARCH}.tar.gz"
+    TEMP_DIR=$(mktemp -d -t shopark-upgrade-XXXXXX 2>/dev/null || mktemp -d)
 
     log_info "正在下载对应系统架构的 Release 资产包: $TARBALL_NAME ..."
 
@@ -571,11 +571,11 @@ else
     for src in $MIRROR_SOURCES; do
         if [ "$src" = "cdn" ]; then
             PLAIN_VER="${TARGET_TAG#v}"
-            DOWNLOAD_URL="https://cdn.shoply.page/container/${PLAIN_VER}/shoply-${PLAIN_VER}-${OS}-${ARCH}.tar.gz"
+            DOWNLOAD_URL="https://cdn.hoxi.dev/shopark/container/${PLAIN_VER}/shopark-${PLAIN_VER}-${OS}-${ARCH}.tar.gz"
         elif [ "$src" = "gitcode" ]; then
-            DOWNLOAD_URL="https://gitcode.com/hoxiai/shoply/releases/download/${TARGET_TAG}/${TARBALL_NAME}"
+            DOWNLOAD_URL="https://gitcode.com/hoxiai/shopark/releases/download/${TARGET_TAG}/${TARBALL_NAME}"
         else
-            DOWNLOAD_URL="https://github.com/hoxiai/shoply/releases/download/${TARGET_TAG}/${TARBALL_NAME}"
+            DOWNLOAD_URL="https://github.com/hoxiai/shopark/releases/download/${TARGET_TAG}/${TARBALL_NAME}"
         fi
 
         log_info "正在从 $src 下载: $DOWNLOAD_URL ..."
@@ -596,24 +596,24 @@ else
 
     # 原子替换执行文件与静态资源
     log_info "正在应用新版本代码与二进制..."
-    if [ -f "$TEMP_DIR/shoply" ] || [ -f "$TEMP_DIR/shoply-${OS}-${ARCH}" ]; then
-        NEW_BIN="$TEMP_DIR/shoply"
-        [ -f "$NEW_BIN" ] || NEW_BIN="$TEMP_DIR/shoply-${OS}-${ARCH}"
-        mv "$NEW_BIN" ./shoply
-        chmod +x ./shoply
+    if [ -f "$TEMP_DIR/shopark" ] || [ -f "$TEMP_DIR/shopark-${OS}-${ARCH}" ]; then
+        NEW_BIN="$TEMP_DIR/shopark"
+        [ -f "$NEW_BIN" ] || NEW_BIN="$TEMP_DIR/shopark-${OS}-${ARCH}"
+        mv "$NEW_BIN" ./shopark
+        chmod +x ./shopark
     else
         log_error "发行包缺少主程序；已停止升级。"
         exit 1
     fi
 
-    PREPARE_COMMAND=(./shoply prepare)
+    PREPARE_COMMAND=(./shopark prepare)
     # 指定旧版本时只使用该归档配套的工具，不能误用上一版本遗留的二进制。
-    if [ -f "$TEMP_DIR/shoply-prepare" ] || [ -f "$TEMP_DIR/shoply-prepare-${OS}-${ARCH}" ]; then
-        NEW_PREP="$TEMP_DIR/shoply-prepare"
-        [ -f "$NEW_PREP" ] || NEW_PREP="$TEMP_DIR/shoply-prepare-${OS}-${ARCH}"
-        mv "$NEW_PREP" ./shoply-prepare
-        chmod +x ./shoply-prepare
-        PREPARE_COMMAND=(./shoply-prepare)
+    if [ -f "$TEMP_DIR/shopark-prepare" ] || [ -f "$TEMP_DIR/shopark-prepare-${OS}-${ARCH}" ]; then
+        NEW_PREP="$TEMP_DIR/shopark-prepare"
+        [ -f "$NEW_PREP" ] || NEW_PREP="$TEMP_DIR/shopark-prepare-${OS}-${ARCH}"
+        mv "$NEW_PREP" ./shopark-prepare
+        chmod +x ./shopark-prepare
+        PREPARE_COMMAND=(./shopark-prepare)
     fi
 
     # 保护性同步目录 (排除敏感与数据文件)
@@ -622,7 +622,7 @@ else
             rsync -a --delete \
                 --exclude="app" \
                 --exclude="conf.yaml" \
-                --exclude="shoply.lock" \
+                --exclude="shopark.lock" \
                 "$TEMP_DIR/$dir/" "$dir/" 2>/dev/null || cp -rf "$TEMP_DIR/$dir/"* "$dir/"
         fi
     done
@@ -633,11 +633,11 @@ else
         log_error "配置或应用注册表迁移失败；已停止升级，请检查日志或执行回滚。"
         exit 1
     fi
-    if [ ! -f "plugins/shoply" ] || ! command -v php >/dev/null 2>&1; then
-        log_error "缺少 PHP CLI 或 plugins/shoply；已停止升级。"
+    if [ ! -f "plugins/shopark" ] || ! command -v php >/dev/null 2>&1; then
+        log_error "缺少 PHP CLI 或 plugins/shopark；已停止升级。"
         exit 1
     fi
-    if ! (cd plugins && php shoply db:sync); then
+    if ! (cd plugins && php shopark db:sync); then
         log_error "PHP 表迁移失败；已停止升级，请检查日志或执行回滚。"
         exit 1
     fi
@@ -646,12 +646,12 @@ else
     echo "$TARGET_TAG" > .version
 
     # 尝试平滑重启服务
-    if command -v systemctl >/dev/null 2>&1 && systemctl is-active shoply >/dev/null 2>&1; then
-        log_info "正在重启 systemd 服务 (systemctl restart shoply)..."
-        systemctl restart shoply
-        log_success "Shoply 系统服务重启成功！"
+    if command -v systemctl >/dev/null 2>&1 && systemctl is-active shopark >/dev/null 2>&1; then
+        log_info "正在重启 systemd 服务 (systemctl restart shopark)..."
+        systemctl restart shopark
+        log_success "Shopark 系统服务重启成功！"
     else
-        log_warn "未检测到 systemd 托管，请手动重启正在运行的 shoply 进程！"
+        log_warn "未检测到 systemd 托管，请手动重启正在运行的 shopark 进程！"
     fi
 
     log_success "🎉 二进制与资产升级成功！当前版本: ${CYAN}${TARGET_TAG}${NC}"

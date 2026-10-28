@@ -2,7 +2,7 @@
 set -e
 
 # ========================================================
-# Shoply 智能运维与运行管理工具 (支持 Docker / Podman)
+# Shopark 智能运维与运行管理工具 (支持 Docker / Podman)
 # ========================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,7 +25,7 @@ detect_compose() {
 
 COMPOSE_CMD=$(detect_compose)
 if [ -z "$COMPOSE_CMD" ]; then
-    echo "[Shoply] 错误: 未检测到 docker compose 或 podman compose，请先安装 Docker 或 Podman 环境。" >&2
+    echo "[Shopark] 错误: 未检测到 docker compose 或 podman compose，请先安装 Docker 或 Podman 环境。" >&2
     exit 1
 fi
 
@@ -46,7 +46,7 @@ generate_secret() {
     if command -v openssl >/dev/null 2>&1; then
         openssl rand -hex "$((length / 2))"
     else
-        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c "$length" || echo "shoply_rand_key_$(date +%s)"
+        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c "$length" || echo "shopark_rand_key_$(date +%s)"
     fi
 }
 
@@ -94,7 +94,7 @@ verify_mysql_connection() {
                 }
             }
             $pdo->exec("USE `{$db}`");
-            $test_table = "__shoply_chk_" . time() . "__";
+            $test_table = "__shopark_chk_" . time() . "__";
             $pdo->exec("CREATE TABLE IF NOT EXISTS `{$test_table}` (id INT PRIMARY KEY)");
             $pdo->exec("INSERT INTO `{$test_table}` VALUES (1)");
             $stmt = $pdo->query("SELECT id FROM `{$test_table}` WHERE id=1");
@@ -119,7 +119,7 @@ verify_mysql_connection() {
 
     # 3. 备选方案：mysql 客户端
     if command -v mysql >/dev/null 2>&1; then
-        local sql_check="CREATE DATABASE IF NOT EXISTS \`$db\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; USE \`$db\`; CREATE TABLE IF NOT EXISTS __shoply_chk__ (id INT PRIMARY KEY); INSERT INTO __shoply_chk__ VALUES (1); SELECT id FROM __shoply_chk__ WHERE id=1; DROP TABLE IF EXISTS __shoply_chk__;"
+        local sql_check="CREATE DATABASE IF NOT EXISTS \`$db\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; USE \`$db\`; CREATE TABLE IF NOT EXISTS __shopark_chk__ (id INT PRIMARY KEY); INSERT INTO __shopark_chk__ VALUES (1); SELECT id FROM __shopark_chk__ WHERE id=1; DROP TABLE IF EXISTS __shopark_chk__;"
         local mysql_err
         if mysql_err=$(MYSQL_PWD="$pass" mysql -h "$probe_host" -P "$port" -u "$user" -e "$sql_check" 2>&1); then
             return 0
@@ -138,7 +138,7 @@ verify_mysql_connection() {
     fi
     if [ -n "$engine" ]; then
         if $engine image inspect mysql:8.0 >/dev/null 2>&1; then
-            local sql_check="CREATE DATABASE IF NOT EXISTS \`$db\`; USE \`$db\`; CREATE TABLE IF NOT EXISTS __shoply_chk__ (id INT); DROP TABLE __shoply_chk__;"
+            local sql_check="CREATE DATABASE IF NOT EXISTS \`$db\`; USE \`$db\`; CREATE TABLE IF NOT EXISTS __shopark_chk__ (id INT); DROP TABLE __shopark_chk__;"
             local container_err
             if container_err=$($engine run --rm --net=host -e MYSQL_PWD="$pass" mysql:8.0 mysql -h "$probe_host" -P "$port" -u "$user" -e "$sql_check" 2>&1); then
                 return 0
@@ -204,7 +204,7 @@ verify_redis_connection() {
             fclose($fp);
             exit(4);
         }
-        $test_key = "__shoply_chk_" . time() . "__";
+        $test_key = "__shopark_chk_" . time() . "__";
         fwrite($fp, "*3\r\n\$3\r\nSET\r\n\$" . strlen($test_key) . "\r\n{$test_key}\r\n\$1\r\n1\r\n");
         $resp = fgets($fp);
         if (strpos($resp, "+OK") !== 0) {
@@ -244,8 +244,8 @@ verify_redis_connection() {
             return 1
         fi
         local set_res
-        set_res=$(redis-cli "${cli_args[@]}" set __shoply_chk__ 1 2>&1 || true)
-        redis-cli "${cli_args[@]}" del __shoply_chk__ >/dev/null 2>&1 || true
+        set_res=$(redis-cli "${cli_args[@]}" set __shopark_chk__ 1 2>&1 || true)
+        redis-cli "${cli_args[@]}" del __shopark_chk__ >/dev/null 2>&1 || true
         if [ "$set_res" != "OK" ]; then
             echo "Redis 写入权限不足: $set_res"
             return 1
@@ -259,7 +259,7 @@ verify_redis_connection() {
         if [ -n "$pass" ]; then
             cmd_buf="AUTH $pass\r\n"
         fi
-        cmd_buf="${cmd_buf}PING\r\nSET __shoply_chk__ 1\r\nDEL __shoply_chk__\r\nQUIT\r\n"
+        cmd_buf="${cmd_buf}PING\r\nSET __shopark_chk__ 1\r\nDEL __shopark_chk__\r\nQUIT\r\n"
         local nc_resp
         nc_resp=$(printf "%b" "$cmd_buf" | nc -w 3 "$probe_host" "$redis_port" 2>/dev/null || true)
         if echo "$nc_resp" | grep -qi -- "-NOAUTH"; then
@@ -279,15 +279,15 @@ verify_redis_connection() {
 # 4. 智能环境向导配置
 interactive_setup() {
     echo "========================================================"
-    echo "       Shoply 部署配置智能向导"
+    echo "       Shopark 部署配置智能向导"
     echo "========================================================"
     echo ""
 
     local use_embedded_mysql="true"
     local db_host="mysql"
     local db_port="3306"
-    local db_name="shoply"
-    local db_user="shoply"
+    local db_name="shopark"
+    local db_user="shopark"
     local db_pass=""
     local mysql_root_pass=""
 
@@ -307,7 +307,7 @@ interactive_setup() {
     fi
 
     if [ "$has_local_mysql" = true ]; then
-        echo "[Shoply] 🔍 检测到宿主机 3306 端口已有运行中的 MySQL 服务。"
+        echo "[Shopark] 🔍 检测到宿主机 3306 端口已有运行中的 MySQL 服务。"
         local choice_mysql="Y"
         if [ "$is_interactive" = true ]; then
             read -r -p "是否直接使用宿主机现有的 MySQL 数据库？ [Y/n]: " input_choice_mysql
@@ -319,8 +319,8 @@ interactive_setup() {
             db_host="host.docker.internal"
             while true; do
                 if [ "$is_interactive" = true ]; then
-                    read -r -p "请输入 MySQL 数据库名称 [默认: shoply]: " input_db
-                    db_name=${input_db:-shoply}
+                    read -r -p "请输入 MySQL 数据库名称 [默认: shopark]: " input_db
+                    db_name=${input_db:-shopark}
                     read -r -p "请输入 MySQL 用户名 [默认: root]: " input_user
                     db_user=${input_user:-root}
                     read -r -p "请输入 MySQL 密码 [留空表示无密码]: " input_pass
@@ -329,19 +329,19 @@ interactive_setup() {
                     db_pass="root"
                 fi
 
-                echo "[Shoply] 正在验证 MySQL 连接及读写/建库权限..."
+                echo "[Shopark] 正在验证 MySQL 连接及读写/建库权限..."
                 local mysql_err=""
                 if mysql_err=$(verify_mysql_connection "$db_host" "$db_port" "$db_name" "$db_user" "$db_pass"); then
-                    echo "[Shoply] ✔️ MySQL 连接与权限验证通过！(目标数据库: ${db_name})"
-                    echo "[Shoply] ✔️ 将连接宿主机 MySQL (${db_host}:${db_port}/${db_name})，跳过启动 MySQL 容器。"
+                    echo "[Shopark] ✔️ MySQL 连接与权限验证通过！(目标数据库: ${db_name})"
+                    echo "[Shopark] ✔️ 将连接宿主机 MySQL (${db_host}:${db_port}/${db_name})，跳过启动 MySQL 容器。"
                     break
                 else
-                    echo "[Shoply] ❌ MySQL 验证失败: $mysql_err"
+                    echo "[Shopark] ❌ MySQL 验证失败: $mysql_err"
                     if [ "$is_interactive" = true ]; then
                         read -r -p "是否重新输入 MySQL 信息？ [Y/n] (输入 n 则放弃连接，改为在容器中独立启动 MySQL): " retry_mysql
                         retry_mysql=${retry_mysql:-Y}
                         if [[ ! "$retry_mysql" =~ ^[Yy]$ ]]; then
-                            echo "[Shoply] ℹ️ 已切换为在容器中独立启动 MySQL 8.0。"
+                            echo "[Shopark] ℹ️ 已切换为在容器中独立启动 MySQL 8.0。"
                             use_embedded_mysql="true"
                             db_host="mysql"
                             db_port="3306"
@@ -356,7 +356,7 @@ interactive_setup() {
                             break
                         fi
                     else
-                        echo "[Shoply] 警告: 非交互模式下 MySQL 验证未通过，将切换为容器内独立启动 MySQL。"
+                        echo "[Shopark] 警告: 非交互模式下 MySQL 验证未通过，将切换为容器内独立启动 MySQL。"
                         use_embedded_mysql="true"
                         db_host="mysql"
                         db_port="3306"
@@ -367,7 +367,7 @@ interactive_setup() {
                 fi
             done
         else
-            echo "[Shoply] ✔️ 将在容器中独立启动 MySQL 8.0。"
+            echo "[Shopark] ✔️ 将在容器中独立启动 MySQL 8.0。"
             if [ "$is_interactive" = true ]; then
                 read -r -p "请设置容器 MySQL 数据库密码 [留空自动生成随机强密码]: " input_db_pass
                 if [ -n "$input_db_pass" ]; then
@@ -383,7 +383,7 @@ interactive_setup() {
             fi
         fi
     else
-        echo "[Shoply] ℹ️ 未检测到宿主机 3306 端口。"
+        echo "[Shopark] ℹ️ 未检测到宿主机 3306 端口。"
         local choice_ext_mysql="n"
         if [ "$is_interactive" = true ]; then
             read -r -p "是否连接外部已有的 MySQL 数据库 (例如云 RDS / 远程主机)？ [y/N]: " input_ext_mysql
@@ -397,24 +397,24 @@ interactive_setup() {
                 db_host=${input_host:-127.0.0.1}
                 read -r -p "请输入 MySQL 端口 [默认: 3306]: " input_port
                 db_port=${input_port:-3306}
-                read -r -p "请输入 MySQL 数据库名称 [默认: shoply]: " input_db
-                db_name=${input_db:-shoply}
+                read -r -p "请输入 MySQL 数据库名称 [默认: shopark]: " input_db
+                db_name=${input_db:-shopark}
                 read -r -p "请输入 MySQL 用户名 [默认: root]: " input_user
                 db_user=${input_user:-root}
                 read -r -p "请输入 MySQL 密码 [留空表示无密码]: " input_pass
                 db_pass=$input_pass
 
-                echo "[Shoply] 正在验证外部 MySQL 连接及读写权限..."
+                echo "[shopark] 正在验证外部 MySQL 连接及读写权限..."
                 local mysql_err=""
                 if mysql_err=$(verify_mysql_connection "$db_host" "$db_port" "$db_name" "$db_user" "$db_pass"); then
-                    echo "[Shoply] ✔️ 外部 MySQL 数据库连接与权限验证通过！(目标数据库: ${db_name})"
+                    echo "[Shopark] ✔️ 外部 MySQL 数据库连接与权限验证通过！(目标数据库: ${db_name})"
                     break
                 else
-                    echo "[Shoply] ❌ MySQL 验证失败: $mysql_err"
+                    echo "[Shopark] ❌ MySQL 验证失败: $mysql_err"
                     read -r -p "是否重新输入 MySQL 信息？ [Y/n] (输入 n 则切换为容器内启动 MySQL): " retry_choice
                     retry_choice=${retry_choice:-Y}
                     if [[ ! "$retry_choice" =~ ^[Yy]$ ]]; then
-                        echo "[Shoply] ℹ️ 已切换为在容器中独立启动 MySQL 8.0。"
+                        echo "[Shopark] ℹ️ 已切换为在容器中独立启动 MySQL 8.0。"
                         use_embedded_mysql="true"
                         db_host="mysql"
                         db_port="3306"
@@ -431,7 +431,7 @@ interactive_setup() {
                 fi
             done
         else
-            echo "[Shoply] ✔️ 将在容器中自动启动 MySQL 8.0。"
+            echo "[Shopark] ✔️ 将在容器中自动启动 MySQL 8.0。"
             if [ "$is_interactive" = true ]; then
                 read -r -p "请设置容器 MySQL 数据库密码 [留空自动生成随机强密码]: " input_db_pass
                 if [ -n "$input_db_pass" ]; then
@@ -456,7 +456,7 @@ interactive_setup() {
     fi
 
     if [ "$has_local_redis" = true ]; then
-        echo "[Shoply] 🔍 检测到宿主机 6379 端口已有运行中的 Redis 服务。"
+        echo "[Shopark] 🔍 检测到宿主机 6379 端口已有运行中的 Redis 服务。"
         local choice_redis="Y"
         if [ "$is_interactive" = true ]; then
             read -r -p "是否直接使用宿主机现有的 Redis 缓存？ [Y/n]: " input_choice_redis
@@ -472,19 +472,19 @@ interactive_setup() {
                     redis_pass=$input_redis_pass
                 fi
 
-                echo "[Shoply] 正在验证 Redis 连接、认证及读写权限..."
+                echo "[Shopark] 正在验证 Redis 连接、认证及读写权限..."
                 local redis_err=""
                 if redis_err=$(verify_redis_connection "$redis_addr" "$redis_pass"); then
-                    echo "[Shoply] ✔️ Redis 连接、认证及读写权限验证通过！"
-                    echo "[Shoply] ✔️ 将连接宿主机 Redis (${redis_addr})，跳过启动 Redis 容器。"
+                    echo "[Shopark] ✔️ Redis 连接、认证及读写权限验证通过！"
+                    echo "[Shopark] ✔️ 将连接宿主机 Redis (${redis_addr})，跳过启动 Redis 容器。"
                     break
                 else
-                    echo "[Shoply] ❌ Redis 验证失败: $redis_err"
+                    echo "[Shopark] ❌ Redis 验证失败: $redis_err"
                     if [ "$is_interactive" = true ]; then
                         read -r -p "是否重新输入 Redis 密码？ [Y/n] (输入 n 则放弃连接，改为在容器中独立启动 Redis): " retry_redis
                         retry_redis=${retry_redis:-Y}
                         if [[ ! "$retry_redis" =~ ^[Yy]$ ]]; then
-                            echo "[Shoply] ℹ️ 已切换为在容器中独立启动 Redis 7。"
+                            echo "[Shopark] ℹ️ 已切换为在容器中独立启动 Redis 7。"
                             use_embedded_redis="true"
                             redis_addr="redis:6379"
                             read -r -p "请设置容器 Redis 密码 [留空自动生成随机密码]: " input_redis_pass
@@ -496,7 +496,7 @@ interactive_setup() {
                             break
                         fi
                     else
-                        echo "[Shoply] 警告: 非交互模式下 Redis 验证未通过，将切换为容器内独立启动 Redis。"
+                        echo "[Shopark] 警告: 非交互模式下 Redis 验证未通过，将切换为容器内独立启动 Redis。"
                         use_embedded_redis="true"
                         redis_addr="redis:6379"
                         redis_pass=$(generate_secret 16)
@@ -505,7 +505,7 @@ interactive_setup() {
                 fi
             done
         else
-            echo "[Shoply] ✔️ 将在容器中独立启动 Redis 7。"
+            echo "[Shopark] ✔️ 将在容器中独立启动 Redis 7。"
             if [ "$is_interactive" = true ]; then
                 read -r -p "请设置容器 Redis 密码 [留空自动生成随机密码]: " input_redis_pass
                 if [ -n "$input_redis_pass" ]; then
@@ -518,7 +518,7 @@ interactive_setup() {
             fi
         fi
     else
-        echo "[Shoply] ℹ️ 未检测到宿主机 6379 端口。"
+        echo "[Shopark] ℹ️ 未检测到宿主机 6379 端口。"
         local choice_ext_redis="n"
         if [ "$is_interactive" = true ]; then
             read -r -p "是否连接外部已有的 Redis 缓存服务 (例如云 Redis / 远程服务)？ [y/N]: " input_ext_redis
@@ -533,17 +533,17 @@ interactive_setup() {
                 read -r -p "请输入 Redis 访问密码 [若无密码直接回车]: " input_redis_pass
                 redis_pass=$input_redis_pass
 
-                echo "[Shoply] 正在验证外部 Redis 连接、认证及读写权限..."
+                echo "[Shopark] 正在验证外部 Redis 连接、认证及读写权限..."
                 local redis_err=""
                 if redis_err=$(verify_redis_connection "$redis_addr" "$redis_pass"); then
-                    echo "[Shoply] ✔️ 外部 Redis 连接与读写权限验证通过！"
+                    echo "[Shopark] ✔️ 外部 Redis 连接与读写权限验证通过！"
                     break
                 else
-                    echo "[Shoply] ❌ Redis 验证失败: $redis_err"
+                    echo "[Shopark] ❌ Redis 验证失败: $redis_err"
                     read -r -p "是否重新输入 Redis 信息？ [Y/n] (输入 n 则切换为容器内启动 Redis): " retry_choice
                     retry_choice=${retry_choice:-Y}
                     if [[ ! "$retry_choice" =~ ^[Yy]$ ]]; then
-                        echo "[Shoply] ℹ️ 已切换为在容器中独立启动 Redis 7。"
+                        echo "[Shopark] ℹ️ 已切换为在容器中独立启动 Redis 7。"
                         use_embedded_redis="true"
                         redis_addr="redis:6379"
                         read -r -p "请设置容器 Redis 密码 [留空自动生成随机密码]: " input_redis_pass
@@ -557,7 +557,7 @@ interactive_setup() {
                 fi
             done
         else
-            echo "[Shoply] ✔️ 将在容器中自动启动 Redis 7。"
+            echo "[Shopark] ✔️ 将在容器中自动启动 Redis 7。"
             if [ "$is_interactive" = true ]; then
                 read -r -p "请设置容器 Redis 密码 [留空自动生成随机密码]: " input_redis_pass
                 if [ -n "$input_redis_pass" ]; then
@@ -577,11 +577,11 @@ interactive_setup() {
     admin_pwd=$(generate_secret 16)
     if [ "$is_interactive" = true ]; then
         while true; do
-            read -r -p "请输入超级管理员登录密码 (登录邮箱: admin@shoply.page) [至少8位]: " input_admin_pwd
+            read -r -p "请输入超级管理员登录密码 (登录邮箱: admin@shopark.ai) [至少8位]: " input_admin_pwd
             if [ -z "$input_admin_pwd" ]; then
-                echo "[Shoply] 提示: 密码不能为空，请输入管理员密码。"
+                echo "[Shopark] 提示: 密码不能为空，请输入管理员密码。"
             elif [ ${#input_admin_pwd} -lt 8 ]; then
-                echo "[Shoply] 提示: 密码长度至少需要8位，请重新输入。"
+                echo "[Shopark] 提示: 密码长度至少需要8位，请重新输入。"
             else
                 admin_pwd="$input_admin_pwd"
                 break
@@ -595,13 +595,13 @@ interactive_setup() {
     # ------------------ 写入 .env 文件 ------------------
     cat <<EOF > .env
 # ========================================================
-# Shoply 运行环境配置文件 (.env) - 智能向导自动生成
+# Shopark 运行环境配置文件 (.env) - 智能向导自动生成
 # 生成时间: $(date '+%Y-%m-%d %H:%M:%S')
 # ========================================================
 
 # 容器镜像配置
 SHOPLY_IMAGE_REGISTRY=crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com
-SHOPLY_IMAGE_NAME=hoxiai/shoply
+SHOPLY_IMAGE_NAME=hoxiai/shopark
 SHOPLY_VERSION=latest
 SHOPLY_HTTP_PORT=5490
 
@@ -624,9 +624,9 @@ SHOPLY_REDIS_PASSWORD=${redis_pass}
 SHOPLY_REDIS_DB=0
 
 # 站点与超级管理员
-SHOPLY_STORE_NAME=Shoply Store
+SHOPLY_STORE_NAME=Shopark Store
 SHOPLY_SITE_URL=http://localhost:5490
-SHOPLY_SITE_EMAIL=admin@shoply.page
+SHOPLY_SITE_EMAIL=admin@shopark.ai
 SHOPLY_SITE_PASSWORD=${admin_pwd}
 
 # 安全密钥
@@ -639,7 +639,7 @@ EOF
     echo "  配置生成成功: .env"
     echo "  - 数据库: ${db_host}:${db_port} (${db_name})"
     echo "  - 缓  存: ${redis_addr}"
-    echo "  - 管理员: admin@shoply.page (初始密码: ${admin_pwd})"
+    echo "  - 管理员: admin@shopark.ai (初始密码: ${admin_pwd})"
     echo "========================================================"
     echo ""
 }
@@ -672,7 +672,7 @@ ensure_runtime_env() {
     if [[ "$COMPOSE_CMD" == *"podman"* ]] && [ "$(id -u)" -ne 0 ]; then
         if command -v loginctl >/dev/null 2>&1; then
             if ! loginctl show-user "$USER" 2>/dev/null | grep -q "Linger=yes"; then
-                loginctl enable-linger "$USER" 2>/dev/null || echo "[Shoply] 提示: 建议执行 'loginctl enable-linger \$USER' 以确保 SSH 会话断开后 Podman 容器持续常驻后台。"
+                loginctl enable-linger "$USER" 2>/dev/null || echo "[Shopark] 提示: 建议执行 'loginctl enable-linger \$USER' 以确保 SSH 会话断开后 Podman 容器持续常驻后台。"
             fi
         fi
     fi
@@ -681,7 +681,7 @@ ensure_runtime_env() {
 # 7. 打印访问入口信息
 print_service_endpoints() {
     local http_port="5490"
-    local admin_email="admin@shoply.page"
+    local admin_email="admin@shopark.ai"
     if [ -f ".env" ]; then
         local p
         p=$(grep -E "^SHOPLY_HTTP_PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
@@ -690,9 +690,9 @@ print_service_endpoints() {
         e=$(grep -E "^SHOPLY_SITE_EMAIL=" .env 2>/dev/null | cut -d= -f2 | tr -d ' "\r' || true)
         [ -n "$e" ] && admin_email="$e"
     fi
-    echo "[Shoply] 前台入口: http://localhost:${http_port}"
-    echo "[Shoply] 管理后台: http://localhost:${http_port}/admin/"
-    echo "[Shoply] 登录账号: ${admin_email}"
+    echo "[Shopark] 前台入口: http://localhost:${http_port}"
+    echo "[Shopark] 管理后台: http://localhost:${http_port}/admin/"
+    echo "[Shopark] 登录账号: ${admin_email}"
 }
 
 # 8. 服务启动流程
@@ -704,24 +704,24 @@ start_service() {
     ensure_runtime_env
     local profile_args
     profile_args=$(get_profile_args)
-    echo "[Shoply] 正在启动服务 (使用: $COMPOSE_CMD $profile_args)..."
+    echo "[Shopark] 正在启动服务 (使用: $COMPOSE_CMD $profile_args)..."
     $COMPOSE_CMD $profile_args up -d
     echo ""
-    echo "[Shoply] 🚀 服务启动成功！"
+    echo "[Shopark] 🚀 服务启动成功！"
     print_service_endpoints
 }
 
 # 9. 服务重启流程 (重载 .env 与服务配置)
 restart_service() {
     if [ ! -f ".env" ]; then
-        echo "[Shoply] 未检测到 .env 配置文件，正在启动向导..."
+        echo "[Shopark] 未检测到 .env 配置文件，正在启动向导..."
         interactive_setup
     fi
 
     ensure_runtime_env
     local profile_args
     profile_args=$(get_profile_args)
-    echo "[Shoply] 正在安全重启服务 (重新加载 .env 配置与容器编排)..."
+    echo "[Shopark] 正在安全重启服务 (重新加载 .env 配置与容器编排)..."
 
     # 先停用所有可能运行的容器 profile (包含内置 mysql/redis)，确保变更被彻底重置
     $COMPOSE_CMD --profile mysql --profile redis down 2>/dev/null || $COMPOSE_CMD down 2>/dev/null || true
@@ -729,7 +729,7 @@ restart_service() {
     $COMPOSE_CMD $profile_args up -d --force-recreate
 
     echo ""
-    echo "[Shoply] 🚀 服务重启成功！"
+    echo "[Shopark] 🚀 服务重启成功！"
     print_service_endpoints
 }
 
@@ -743,10 +743,10 @@ case "$1" in
             if [[ "$input_restart" =~ ^[Yy]$ ]]; then
                 restart_service
             else
-                echo "[Shoply] 提示: 您可以随时执行 './shoply.sh restart' 或 './shoply.sh start' 启动服务。"
+                echo "[Shopark] 提示: 您可以随时执行 './shopark.sh restart' 或 './shopark.sh start' 启动服务。"
             fi
         else
-            echo "[Shoply] 提示: 配置已保存，执行 './shoply.sh restart' 即可使新配置生效。"
+            echo "[Shopark] 提示: 配置已保存，执行 './shopark.sh restart' 即可使新配置生效。"
         fi
         ;;
     start|up)
@@ -754,9 +754,9 @@ case "$1" in
         ;;
     stop|down)
         PROFILE_ARGS=$(get_profile_args)
-        echo "[Shoply] 正在停止服务..."
+        echo "[Shopark] 正在停止服务..."
         $COMPOSE_CMD $PROFILE_ARGS down
-        echo "[Shoply] 服务已停止。"
+        echo "[Shopark] 服务已停止。"
         ;;
     restart)
         restart_service
@@ -768,7 +768,7 @@ case "$1" in
     logs)
         PROFILE_ARGS=$(get_profile_args)
         shift
-        $COMPOSE_CMD $PROFILE_ARGS logs -f "${@:-shoply}"
+        $COMPOSE_CMD $PROFILE_ARGS logs -f "${@:-shopark}"
         ;;
     update|pull|upgrade)
         shift 2>/dev/null || true
@@ -779,9 +779,9 @@ case "$1" in
         exec ./scripts/build-image.sh "$@"
         ;;
     help|*)
-        echo "Shoply 容器管理工具"
+        echo "Shopark 容器管理工具"
         echo ""
-        echo "用法: ./scripts/shoply.sh [命令]"
+        echo "用法: ./scripts/shopark.sh [命令]"
         echo ""
         echo "常用命令:"
         echo "  start     启动服务（若未初始化会自动启动智能检测与向导）"
@@ -789,10 +789,10 @@ case "$1" in
         echo "  stop      停止并移除当前容器"
         echo "  restart   安全重启所有服务（自动重载 .env 与服务配置）"
         echo "  status    查看各服务运行状态"
-        echo "  logs      跟踪实时日志 (例: ./scripts/shoply.sh logs)"
+        echo "  logs      跟踪实时日志 (例: ./scripts/shopark.sh logs)"
         echo "  update    一键检查并在线平滑升级应用 (支持版本指定与自动回滚)"
         echo "  upgrade   同 update"
-        echo "  build     构建本地 Docker / Podman 镜像 (例: ./scripts/shoply.sh build v1.0.0)"
+        echo "  build     构建本地 Docker / Podman 镜像 (例: ./scripts/shopark.sh build v1.0.0)"
         echo "  help      显示此帮助信息"
         echo ""
         ;;

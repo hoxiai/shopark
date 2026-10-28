@@ -1,11 +1,11 @@
-# Shoply Official Distribution
+# Shopark Official Distribution
 
-> **Shoply** is a next-generation, high-performance multilingual e-commerce platform built for global direct-to-consumer (DTC) brands and B2B commerce. Powered by a lightning-fast Go transaction & AI engine, responsive SSR storefront, modern Naive UI administration dashboard, and an extensible PHP application ecosystem.
+> **Shopark** is a next-generation, high-performance multilingual e-commerce platform built for global direct-to-consumer (DTC) brands and B2B commerce. Powered by a lightning-fast Go transaction & AI engine, responsive SSR storefront, modern Naive UI administration dashboard, and an extensible PHP application ecosystem.
 
-This repository is the **official release distribution** for Shoply, providing turnkey Docker and Podman orchestration, production-ready environment templates, and automated operations scripts.
+This repository is the **official release distribution** for Shopark, providing turnkey Docker and Podman orchestration, production-ready environment templates, and automated operations scripts.
 
-- **Global Repository**: [https://github.com/hoxiai/shoply](https://github.com/hoxiai/shoply)
-- **China Mirror**: [https://gitcode.com/hoxiai/shoply](https://gitcode.com/hoxiai/shoply)
+- **Global Repository**: [https://github.com/hoxiai/shopark](https://github.com/hoxiai/shopark)
+- **China Mirror**: [https://gitcode.com/hoxiai/shopark](https://gitcode.com/hoxiai/shopark)
 
 ---
 
@@ -18,53 +18,53 @@ This repository is the **official release distribution** for Shoply, providing t
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/hoxiai/shoply.git
-cd shoply
+git clone https://github.com/hoxiai/shopark.git
+cd shopark
 ```
 
 ### 2. Launch Services (Smart Port Detection & Setup)
 Run the root helper script directly:
 ```bash
-./shoply.sh start
+./shopark.sh start
 ```
 > **💡 Smart Detection Features**:
 > - Scans host ports **3306 (MySQL)** and **6379 (Redis)** automatically.
 > - **Existing host MySQL / Redis detected**: Prompts to connect directly without starting unnecessary containers.
 > - **No existing services found**: Automatically spins up containerized MySQL 8.0 & Redis 7 with auto-generated secure credentials.
-> - For international deployments, switch `SHOPLY_IMAGE_REGISTRY=ghcr.io` in `.env` if desired.
+> - For international deployments, switch `SHOPARK_IMAGE_REGISTRY=ghcr.io` in `.env` if desired.
 
-### 3. Access Shoply
+### 3. Access Shopark
 - **Storefront**: `http://localhost:5490`
 - **Admin Dashboard**: `http://localhost:5490/admin/`
-- **Default Account**: `admin@shoply.page` (password entered during setup)
+- **Default Account**: `admin@shopark.ai` (password entered during setup)
 
 ---
 
-## 🛠️ Management CLI (`shoply.sh`)
+## 🛠️ Management CLI (`shopark.sh`)
 
-Manage your instance easily via `./shoply.sh` (or `./scripts/shoply.sh`):
+Manage your instance easily via `./shopark.sh` (or `./scripts/shopark.sh`):
 
 ```bash
 # Start all containers (auto-launches setup wizard if unconfigured)
-./shoply.sh start
+./shopark.sh start
 
 # Re-run setup wizard to reconfigure .env & prompt restart
-./shoply.sh init
+./shopark.sh init
 
 # Stop running containers
-./shoply.sh stop
+./shopark.sh stop
 
 # Safely restart all services (fully reloads .env, service profiles & container definitions)
-./shoply.sh restart
+./shopark.sh restart
 
 # Check container health and status
-./shoply.sh status
+./shopark.sh status
 
 # Follow real-time application logs
-./scripts/shoply.sh logs
+./scripts/shopark.sh logs
 
 # Check and perform smooth online update (supports version pinning & auto-rollback)
-./scripts/shoply.sh update
+./scripts/shopark.sh update
 # Or run the dedicated upgrade script:
 bash scripts/upgrade.sh              # Update to the latest release
 bash scripts/upgrade.sh v1.0.1       # Upgrade to a specific version
@@ -72,16 +72,16 @@ bash scripts/upgrade.sh --check      # Check for available updates
 bash scripts/upgrade.sh --rollback   # Rollback to the previous stable backup
 
 # Build local container image (see below)
-./scripts/shoply.sh build v1.0.0
+./scripts/shopark.sh build v1.0.0
 ```
 
 ---
 
 ## 🔨 Building Image Locally (Optional)
 
-Using official prebuilt images via `./scripts/shoply.sh start` is recommended.
+Using official prebuilt images via `./scripts/shopark.sh start` is recommended.
 
-Current releases include preparation in the main binary: `./shoply prepare --config ./config/conf.yaml`. Container startup runs preparation, PHP database migration, then the server; configuration or migration failures stop startup. No separate preparation binary is required. The build and upgrade scripts retain support for older archives that include their own preparation tool.
+Current releases include preparation in the main binary: `./shopark prepare --config ./config/conf.yaml`. Container startup runs preparation, PHP database migration, then the server; configuration or migration failures stop startup. No separate preparation binary is required. The build and upgrade scripts retain support for older archives that include their own preparation tool.
 
 To build custom images:
 
@@ -90,15 +90,15 @@ To build custom images:
 ./build.sh v1.0.0
 
 # Or via management CLI
-./scripts/shoply.sh build v1.0.0
+./scripts/shopark.sh build v1.0.0
 ```
-> **Note**: Building images requires closed-source binaries and runtime assets. If local assets are missing, the build script automatically fetches and extracts the corresponding release package (`shoply-*.tar.gz`) from official Releases (GitHub or GitCode, configurable via `--github` / `--gitcode`). Offline manual placement of the archive is also supported.
+> **Note**: Building images requires closed-source binaries and runtime assets. If local assets are missing, the build script automatically fetches and extracts the corresponding release package (`shopark-*.tar.gz`) from official Releases (GitHub or GitCode, configurable via `--github` / `--gitcode`). Offline manual placement of the archive is also supported.
 
 ---
 
 ## 🛡️ Podman (Rootless Support)
 
-Shoply is engineered to run seamlessly with Rootless Podman without root privileges:
+Shopark is engineered to run seamlessly with Rootless Podman without root privileges:
 1. Runs on standard unprivileged port `5490` (no `<1024` privilege needed).
 2. Volume mounts in `docker-compose.yml` include `:Z` flags for automatic SELinux label configuration.
 
@@ -106,7 +106,7 @@ Start via:
 ```bash
 podman-compose up -d
 # or using the helper script:
-./scripts/shoply.sh start
+./scripts/shopark.sh start
 ```
 
 ---
@@ -163,5 +163,5 @@ Persistent application state and customizable directories:
 
 ## 📄 License & Commercial Support
 
-- This distribution is provided under the Shoply Commercial / End User License.
-- For product updates, custom apps, and enterprise support, visit [Hoxi AI](https://hoxi.ai).
+- This distribution is provided under the Shopark Commercial / End User License.
+- For product updates, custom apps, and enterprise support, visit [Shopark](https://shopark.ai).

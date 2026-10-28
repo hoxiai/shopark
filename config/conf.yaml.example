@@ -1,5 +1,5 @@
 # ========================================================
-# Shoply 配置文件示例 (conf.yaml.example)
+# Shopark 配置文件示例 (conf.yaml.example)
 # 容器默认会通过 .env 环境变量自动初始化配置。
 # 若挂载宿主机独立配置文件，可在此基础上修改。
 # ========================================================
@@ -7,12 +7,12 @@ httpPort: "5490"
 dbDriver: "mysql"
 dbHost: "mysql"
 dbPort: 3306
-dbUser: "shoply"
-dbPass: "shoply"
-dbName: "shoply"
+dbUser: "shopark"
+dbPass: "shopark"
+dbName: "shopark"
 redisAddr: "redis:6379"
 redisPass: ""
 redisDB: 0
-storeName: "Shoply Store"
+storeName: "Shopark Store"
 siteUrl: "http://localhost:5490/"
-email: "admin@shoply.page"
+email: "admin@shopark.ai"

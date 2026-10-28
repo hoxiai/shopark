@@ -1,11 +1,11 @@
-# Shoply 官方部署分发库
+# Shopark 官方部署分发库
 
-> **Shoply** 是专为跨境与品牌出海打造的下一代高性能多语言独立站电商系统。底层由 Go 高性能交易与 AI 引擎驱动，前端采用响应式 SSR 动态渲染与 Naive UI 后台，并深度融合 PHP 插件与开放应用市场。
+> **Shopark** 是专为跨境与品牌出海打造的下一代高性能多语言独立站电商系统。底层由 Go 高性能交易与 AI 引擎驱动，前端采用响应式 SSR 动态渲染与 Naive UI 后台，并深度融合 PHP 插件与开放应用市场。
 
-本仓库是 **Shoply 官方发布版**，提供直接运行的容器编排模版、一键部署脚本及镜像配置。无需从零编译，几分钟即可在服务器上完成私有化部署。
+本仓库是 **Shopark 官方发布版**，提供直接运行的容器编排模版、一键部署脚本及镜像配置。无需从零编译，几分钟即可在服务器上完成私有化部署。
 
-- **国内仓库**：[https://gitcode.com/hoxiai/shoply](https://gitcode.com/hoxiai/shoply) （默认配置国内镜像源，开箱即用）
-- **国际仓库**：[https://github.com/hoxiai/shoply](https://github.com/hoxiai/shoply)
+- **国内仓库**：[https://gitcode.com/hoxiai/shopark](https://gitcode.com/hoxiai/shopark) （默认配置国内镜像源，开箱即用）
+- **国际仓库**：[https://github.com/hoxiai/shopark](https://github.com/hoxiai/shopark)
 
 ---
 
@@ -18,53 +18,53 @@
 
 ### 1. 克隆本仓库并进入目录
 ```bash
-git clone https://gitcode.com/hoxiai/shoply.git
-cd shoply
+git clone https://gitcode.com/hoxiai/shopark.git
+cd shopark
 ```
 
 ### 2. 一键启动（智能向导与端口自动检测）
 进入目录后，直接执行根目录管理脚本：
 ```bash
-./shoply.sh start
+./shopark.sh start
 ```
 > **💡 智能检测特性**：
 > - 脚本会自动扫描宿主机 **3306 (MySQL)** 与 **6379 (Redis)** 端口。
-> - **若宿主机已有 MySQL/Redis**：会提示确认并引导输入数据库库名、账号密码，Shoply 将直接连接已有服务，**不启动多余容器**。
+> - **若宿主机已有 MySQL/Redis**：会提示确认并引导输入数据库库名、账号密码，Shopark 将直接连接已有服务，**不启动多余容器**。
 > - **若未检测到或选择独立运行**：会自动以容器方式一键拉起 MySQL 8.0 与 Redis 7，并自动生成高强度随机密码写入 `.env`。
 > - 默认配置已指向**阿里云国内公开镜像源**，国内服务器拉取极速稳定。
 
 ### 3. 访问系统
 - **商城前台**：`http://localhost:5490`
 - **管理后台**：`http://localhost:5490/admin/`
-- **默认管理员**：`admin@shoply.page`（密码为您在启动向导中输入的管理员密码）
+- **默认管理员**：`admin@shopark.ai`（密码为您在启动向导中输入的管理员密码）
 
 ---
 
 ## 🛠️ 运维与管理命令
 
-通过根目录便捷管理脚本 `./shoply.sh`（或 `./scripts/shoply.sh`）：
+通过根目录便捷管理脚本 `./shopark.sh`（或 `./scripts/shopark.sh`）：
 
 ```bash
 # 启动所有服务 (后台守护进程，未初始化时自动进入交互向导)
-./shoply.sh start
+./shopark.sh start
 
 # 重新运行配置向导修改 .env，并在完成后提示立即重启生效
-./shoply.sh init
+./shopark.sh init
 
 # 停止并移除容器
-./shoply.sh stop
+./shopark.sh stop
 
 # 安全重启所有服务 (彻底重新加载 .env 变量、服务配置与 Profile 编排)
-./shoply.sh restart
+./shopark.sh restart
 
 # 查看服务运行状态
-./shoply.sh status
+./shopark.sh status
 
 # 跟踪查看主服务实时日志
-./scripts/shoply.sh logs
+./scripts/shopark.sh logs
 
 # 一键检查并在线平滑更新升级 (支持指定版本与自动回滚)
-./scripts/shoply.sh update
+./scripts/shopark.sh update
 # 或直接运行专用升级脚本:
 bash scripts/upgrade.sh              # 检查并更新至最新版本
 bash scripts/upgrade.sh v1.0.1       # 升级至指定版本
@@ -72,16 +72,16 @@ bash scripts/upgrade.sh --check      # 仅检查是否有新版本
 bash scripts/upgrade.sh --rollback   # 故障时快速回滚至上一稳定版本
 
 # 本地构建镜像 (详见下方说明)
-./scripts/shoply.sh build v1.0.0
+./scripts/shopark.sh build v1.0.0
 ```
 
 ---
 
 ## 🔨 本地构建镜像 (可选)
 
-官方推荐直接通过 `./scripts/shoply.sh start` 拉取预构建镜像运行（开箱即用）。
+官方推荐直接通过 `./scripts/shopark.sh start` 拉取预构建镜像运行（开箱即用）。
 
-当前发行版已将环境初始化能力内置于主二进制中：`./shoply prepare --config ./config/conf.yaml`。容器启动时会依次执行环境准备（prepare）、PHP 数据库迁移，随后启动主服务；若配置校验或迁移失败将直接中止启动，无需单独的预备二进制文件。构建与升级脚本同时保留了对自带独立预备工具的历史归档包的兼容支持。
+当前发行版已将环境初始化能力内置于主二进制中：`./shopark prepare --config ./config/conf.yaml`。容器启动时会依次执行环境准备（prepare）、PHP 数据库迁移，随后启动主服务；若配置校验或迁移失败将直接中止启动，无需单独的预备二进制文件。构建与升级脚本同时保留了对自带独立预备工具的历史归档包的兼容支持。
 
 若您需要本地定制或基于离线包构建：
 
@@ -90,15 +90,15 @@ bash scripts/upgrade.sh --rollback   # 故障时快速回滚至上一稳定版�
 ./build.sh v1.0.0
 
 # 或通过运维脚本执行:
-./scripts/shoply.sh build v1.0.0
+./scripts/shopark.sh build v1.0.0
 ```
-> **说明**：构建镜像需要闭源二进制与运行资产。执行构建时若本地缺少资产，脚本会自动从官方 Release（国内优先 GitCode，海外优先 GitHub，支持 `--gitcode` 或 `--github` 指定）拉取对应版本的 `shoply-*.tar.gz` 离线资产包并解压构建；亦支持在离线环境下提前放置安装包后直接构建。
+> **说明**：构建镜像需要闭源二进制与运行资产。执行构建时若本地缺少资产，脚本会自动从官方 Release（国内优先 GitCode，海外优先 GitHub，支持 `--gitcode` 或 `--github` 指定）拉取对应版本的 `shopark-*.tar.gz` 离线资产包并解压构建；亦支持在离线环境下提前放置安装包后直接构建。
 
 ---
 
 ## 🛡️ Podman (Rootless 免 Root 部署)
 
-Shoply 完全遵循安全最佳实践，完美兼容 Podman 原生 Rootless 模式：
+Shopark 完全遵循安全最佳实践，完美兼容 Podman 原生 Rootless 模式：
 1. 默认运行端口为 `5490`，无需绑定特权端口（<1024）。
 2. `docker-compose.yml` 中的挂载目录已配置 `:Z` 标签，原生兼容 SELinux 策略。
 
@@ -106,7 +106,7 @@ Shoply 完全遵循安全最佳实践，完美兼容 Podman 原生 Rootless 模�
 ```bash
 podman-compose up -d
 # 或通过脚本自动探测运行:
-./scripts/shoply.sh start
+./scripts/shopark.sh start
 ```
 
 ---
@@ -164,4 +164,4 @@ server {
 ## 📄 开源与商业授权
 
 - 本仓库的分发文件遵循商业/闭源最终用户许可，详情请参见具体授权协议。
-- 更多产品动态与生态支持，请关注 [Hoxi AI 官网](https://hoxi.ai)。
+- 更多产品动态与生态支持，请关注 [Shopark 官网](https://shopark.ai)。

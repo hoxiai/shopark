@@ -1,62 +1,62 @@
 services:
-  shoply:
-    image: ${SHOPLY_IMAGE_REGISTRY:-crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com}/${SHOPLY_IMAGE_NAME:-hoxiai/shoply}:${SHOPLY_VERSION:-latest}
-    container_name: shoply-app
+  shopark:
+    image: ${SHOPARK_IMAGE_REGISTRY:-crpi-vvvid8bdlzbcxo4s.cn-shenzhen.personal.cr.aliyuncs.com}/${SHOPARK_IMAGE_NAME:-hoxiai/shopark}:${SHOPARK_VERSION:-latest}
+    container_name: shopark-app
     restart: unless-stopped
     ports:
-      - "${SHOPLY_HTTP_PORT:-5490}:5490"
+      - "${SHOPARK_HTTP_PORT:-5490}:5490"
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "host.containers.internal:host-gateway"
     environment:
-      - SHOPLY_MODE=production
+      - SHOPARK_MODE=production
       # 数据库连接
-      - SHOPLY_DB_DRIVER=${SHOPLY_DB_DRIVER:-mysql}
-      - SHOPLY_DB_HOST=${SHOPLY_DB_HOST:-mysql}
-      - SHOPLY_DB_PORT=${SHOPLY_DB_PORT:-3306}
-      - SHOPLY_DB_DATABASE=${SHOPLY_DB_DATABASE:-shoply}
-      - SHOPLY_DB_USERNAME=${SHOPLY_DB_USERNAME:-shoply}
-      - SHOPLY_DB_PASSWORD=${SHOPLY_DB_PASSWORD:?set SHOPLY_DB_PASSWORD in .env}
+      - SHOPARK_DB_DRIVER=${SHOPARK_DB_DRIVER:-mysql}
+      - SHOPARK_DB_HOST=${SHOPARK_DB_HOST:-mysql}
+      - SHOPARK_DB_PORT=${SHOPARK_DB_PORT:-3306}
+      - SHOPARK_DB_DATABASE=${SHOPARK_DB_DATABASE:-shopark}
+      - SHOPARK_DB_USERNAME=${SHOPARK_DB_USERNAME:-shopark}
+      - SHOPARK_DB_PASSWORD=${SHOPARK_DB_PASSWORD:?set SHOPARK_DB_PASSWORD in .env}
       # Redis 缓存连接
-      - SHOPLY_REDIS_ADDR=${SHOPLY_REDIS_ADDR:-redis:6379}
-      - SHOPLY_REDIS_PASSWORD=${SHOPLY_REDIS_PASSWORD:-}
-      - SHOPLY_REDIS_DB=${SHOPLY_REDIS_DB:-0}
+      - SHOPARK_REDIS_ADDR=${SHOPARK_REDIS_ADDR:-redis:6379}
+      - SHOPARK_REDIS_PASSWORD=${SHOPARK_REDIS_PASSWORD:-}
+      - SHOPARK_REDIS_DB=${SHOPARK_REDIS_DB:-0}
       # 站点与初始管理员
-      - SHOPLY_STORE_NAME=${SHOPLY_STORE_NAME:-Shoply Store}
-      - SHOPLY_SITE_URL=${SHOPLY_SITE_URL:-http://localhost:5490}
-      - SHOPLY_SITE_EMAIL=${SHOPLY_SITE_EMAIL:-admin@shoply.page}
-      - SHOPLY_SITE_PASSWORD=${SHOPLY_SITE_PASSWORD:?set SHOPLY_SITE_PASSWORD in .env}
-      - SHOPLY_INIT_HTTP_PORT=:5490
-      - SHOPLY_JWT_SIGN_KEY=${SHOPLY_JWT_SIGN_KEY:?set SHOPLY_JWT_SIGN_KEY in .env}
-      - SHOPLY_JWT_SECRET_KEY=${SHOPLY_JWT_SECRET_KEY:?set SHOPLY_JWT_SECRET_KEY in .env}
-      - SHOPLY_JWT_ADMIN_PERMISSION_MODE=${SHOPLY_JWT_ADMIN_PERMISSION_MODE:-enforce}
+      - SHOPARK_STORE_NAME=${SHOPARK_STORE_NAME:-Shopark Store}
+      - SHOPARK_SITE_URL=${SHOPARK_SITE_URL:-http://localhost:5490}
+      - SHOPARK_SITE_EMAIL=${SHOPARK_SITE_EMAIL:-admin@shopark.ai}
+      - SHOPARK_SITE_PASSWORD=${SHOPARK_SITE_PASSWORD:?set SHOPARK_SITE_PASSWORD in .env}
+      - SHOPARK_INIT_HTTP_PORT=:5490
+      - SHOPARK_JWT_SIGN_KEY=${SHOPARK_JWT_SIGN_KEY:?set SHOPARK_JWT_SIGN_KEY in .env}
+      - SHOPARK_JWT_SECRET_KEY=${SHOPARK_JWT_SECRET_KEY:?set SHOPARK_JWT_SECRET_KEY in .env}
+      - SHOPARK_JWT_ADMIN_PERMISSION_MODE=${SHOPARK_JWT_ADMIN_PERMISSION_MODE:-enforce}
       # 反向代理（宿主机 Nginx/Caddy、GoPanel 容器）经 Docker/Podman 网桥访问，来源是私网地址；
       # 只信任这些来源的 X-Forwarded-For。代理不在私网时改成代理的实际 IP/CIDR。
-      - SHOPLY_HTTP_TRUSTED_PROXIES=${SHOPLY_HTTP_TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      - SHOPARK_HTTP_TRUSTED_PROXIES=${SHOPARK_HTTP_TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
       # 官方应用与主题市场接口
-      - SHOPLY_OFFICIAL_API_URL=${SHOPLY_OFFICIAL_API_URL:-https://iqingpu.com}
-      - SHOPLY_REGISTRY_URL=${SHOPLY_REGISTRY_URL:-https://iqingpu.com}
+      - SHOPARK_OFFICIAL_API_URL=${SHOPARK_OFFICIAL_API_URL:-https://shopark.ai}
+      - SHOPARK_REGISTRY_URL=${SHOPARK_REGISTRY_URL:-https://shopark.ai}
     volumes:
-      - ./config:/var/www/shoply/config:Z
-      - ./data:/var/www/shoply/data:Z
-      - ./runtime:/var/www/shoply/runtime:Z
-      - ./public/uploads:/var/www/shoply/public/uploads:Z
-      - ./plugins/app:/var/www/shoply/plugins/app:Z
+      - ./config:/var/www/shopark/config:Z
+      - ./data:/var/www/shopark/data:Z
+      - ./runtime:/var/www/shopark/runtime:Z
+      - ./public/uploads:/var/www/shopark/public/uploads:Z
+      - ./plugins/app:/var/www/shopark/plugins/app:Z
 
   mysql:
     profiles: ["mysql"]
     image: mysql:8.0
-    container_name: shoply-mysql
+    container_name: shopark-mysql
     restart: unless-stopped
     command:
       - --default-authentication-plugin=mysql_native_password
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     environment:
-      MYSQL_ROOT_PASSWORD: ${SHOPLY_MYSQL_ROOT_PASSWORD:-shoply_root_password_change_me}
-      MYSQL_DATABASE: ${SHOPLY_DB_DATABASE:-shoply}
-      MYSQL_USER: ${SHOPLY_DB_USERNAME:-shoply}
-      MYSQL_PASSWORD: ${SHOPLY_DB_PASSWORD:-shoply_db_password_change_me}
+      MYSQL_ROOT_PASSWORD: ${SHOPARK_MYSQL_ROOT_PASSWORD:-shopark_root_password_change_me}
+      MYSQL_DATABASE: ${SHOPARK_DB_DATABASE:-shopark}
+      MYSQL_USER: ${SHOPARK_DB_USERNAME:-shopark}
+      MYSQL_PASSWORD: ${SHOPARK_DB_PASSWORD:-shopark_db_password_change_me}
     volumes:
       - mysql_data:/var/lib/mysql:Z
     healthcheck:
@@ -68,11 +68,11 @@ services:
   redis:
     profiles: ["redis"]
     image: redis:7-alpine
-    container_name: shoply-redis
+    container_name: shopark-redis
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${SHOPLY_REDIS_PASSWORD:-shoply_redis_password_change_me}"]
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${SHOPARK_REDIS_PASSWORD:-shopark_redis_password_change_me}"]
     environment:
-      REDISCLI_AUTH: ${SHOPLY_REDIS_PASSWORD:-shoply_redis_password_change_me}
+      REDISCLI_AUTH: ${SHOPARK_REDIS_PASSWORD:-shopark_redis_password_change_me}
     volumes:
       - redis_data:/data:Z
     healthcheck:

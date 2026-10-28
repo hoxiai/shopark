@@ -3,11 +3,11 @@ set -e
 
 # Explicit utility commands do not start or migrate the application.
 case "$1" in
-    prepare|doctor|--doctor|-d) set -- ./shoply "$@" ;;
+    prepare|doctor|--doctor|-d) set -- ./shopark "$@" ;;
 esac
 
 case "${1##*/}" in
-    shoply|shoply-linux-*)
+    shopark|shopark-linux-*)
         doctor_requested=false
         utility_subcommand=false
         doctor_config_value=false
@@ -128,14 +128,14 @@ sync_apps_from_dir() {
         local src_ver
         src_ver="$(app_version "$src_app")"
         if [ ! -d "$app_target" ]; then
-            echo "[Shoply] Installing built-in application $app_name $src_ver"
+            echo "[Shopark] Installing built-in application $app_name $src_ver"
             cp -r "$src_app" "$app_target"
         elif [ -n "$src_ver" ] && version_gt "$src_ver" "$(app_version "$app_target")"; then
             if [ -e "$app_target/.git" ]; then
-                echo "[Shoply] WARNING: $app_target is a source checkout; keeping it instead of version $src_ver" >&2
+                echo "[Shopark] WARNING: $app_target is a source checkout; keeping it instead of version $src_ver" >&2
                 continue
             fi
-            echo "[Shoply] Upgrading built-in application $app_name to version $src_ver"
+            echo "[Shopark] Upgrading built-in application $app_name to version $src_ver"
             rm -rf "$app_target.next"
             cp -r "$src_app" "$app_target.next"
             rm -rf "$app_target"
@@ -155,17 +155,17 @@ sync_themes_from_dir() {
         local src_theme_ver
         src_theme_ver="$(theme_version "$src_theme")"
         if [ ! -f "$theme_target/theme-package.json" ]; then
-            echo "[Shoply] Installing built-in theme $theme_name $src_theme_ver"
+            echo "[Shopark] Installing built-in theme $theme_name $src_theme_ver"
             rm -rf "$theme_target.next"
             cp -r "$src_theme" "$theme_target.next"
             rm -rf "$theme_target"
             mv "$theme_target.next" "$theme_target"
         elif [ -n "$src_theme_ver" ] && version_gt "$src_theme_ver" "$(theme_version "$theme_target")"; then
             if [ -e "$theme_target/.git" ]; then
-                echo "[Shoply] WARNING: $theme_target is a source checkout; keeping it instead of version $src_theme_ver" >&2
+                echo "[Shopark] WARNING: $theme_target is a source checkout; keeping it instead of version $src_theme_ver" >&2
                 continue
             fi
-            echo "[Shoply] Upgrading built-in theme $theme_name to version $src_theme_ver"
+            echo "[Shopark] Upgrading built-in theme $theme_name to version $src_theme_ver"
             rm -rf "$theme_target.next"
             cp -r "$src_theme" "$theme_target.next"
             rm -rf "$theme_target"
@@ -176,17 +176,17 @@ sync_themes_from_dir() {
 
 # 0.1 自愈恢复持久化在线系统更新 (data/system-release/current)
 persisted_release_dir="data/system-release/current"
-if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shoply" ]; then
+if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shopark" ]; then
     persisted_sys_ver="$(tr -d '[:space:]' < "$persisted_release_dir/VERSION" 2>/dev/null || true)"
     image_sys_ver=""
     if [ -f "VERSION" ]; then
         image_sys_ver="$(tr -d '[:space:]' < "VERSION" 2>/dev/null || true)"
     fi
     if [ -n "$persisted_sys_ver" ] && version_gt "$persisted_sys_ver" "$image_sys_ver"; then
-        echo "[Shoply] Restoring persisted online system update $persisted_sys_ver from $persisted_release_dir"
-        cp "$persisted_release_dir/shoply" "./shoply.next"
-        chmod 755 "./shoply.next"
-        mv "./shoply.next" "./shoply"
+        echo "[Shopark] Restoring persisted online system update $persisted_sys_ver from $persisted_release_dir"
+        cp "$persisted_release_dir/shopark" "./shopark.next"
+        chmod 755 "./shopark.next"
+        mv "./shopark.next" "./shopark"
         cp "$persisted_release_dir/VERSION" "./VERSION"
         for sub in dist resource ai-decor scripts; do
             if [ -d "$persisted_release_dir/$sub" ]; then
@@ -201,8 +201,8 @@ if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shopl
     fi
 fi
 
-sync_apps_from_dir "/var/www/shoply/.builtin-plugins-app"
-sync_themes_from_dir "/var/www/shoply/.builtin-template-themes"
+sync_apps_from_dir "/var/www/shopark/.builtin-plugins-app"
+sync_themes_from_dir "/var/www/shopark/.builtin-template-themes"
 
 # 等待 TCP 端口就绪工具函数
 wait_for_port() {
@@ -212,28 +212,28 @@ wait_for_port() {
     local max_retries=60
     local count=0
 
-    echo "[Shoply] Waiting for $name at $host:$port to be ready..."
+    echo "[Shopark] Waiting for $name at $host:$port to be ready..."
     while ! nc -z "$host" "$port" >/dev/null 2>&1 && ! (echo > "/dev/tcp/$host/$port") >/dev/null 2>&1; do
         sleep 1
         count=$((count + 1))
         if [ "$count" -ge "$max_retries" ]; then
-            echo "[Shoply] ERROR: Timed out waiting for $name at $host:$port"
+            echo "[Shopark] ERROR: Timed out waiting for $name at $host:$port"
             exit 1
         fi
     done
-    echo "[Shoply] $name is ready!"
+    echo "[Shopark] $name is ready!"
 }
 
 # 1. 检查并等待外部数据库就绪
-if [ -n "$SHOPLY_DB_HOST" ]; then
-    DB_PORT="${SHOPLY_DB_PORT:-3306}"
-    wait_for_port "$SHOPLY_DB_HOST" "$DB_PORT" "Database"
+if [ -n "$SHOPARK_DB_HOST" ]; then
+    DB_PORT="${SHOPARK_DB_PORT:-3306}"
+    wait_for_port "$SHOPARK_DB_HOST" "$DB_PORT" "Database"
 fi
 
 # 2. 检查并等待外部 Redis 就绪
-if [ -n "$SHOPLY_REDIS_ADDR" ]; then
-    REDIS_HOST=$(echo "$SHOPLY_REDIS_ADDR" | cut -d: -f1)
-    REDIS_PORT=$(echo "$SHOPLY_REDIS_ADDR" | cut -d: -f2)
+if [ -n "$SHOPARK_REDIS_ADDR" ]; then
+    REDIS_HOST=$(echo "$SHOPARK_REDIS_ADDR" | cut -d: -f1)
+    REDIS_PORT=$(echo "$SHOPARK_REDIS_ADDR" | cut -d: -f2)
     REDIS_PORT="${REDIS_PORT:-6379}"
     if [ -n "$REDIS_HOST" ]; then
         wait_for_port "$REDIS_HOST" "$REDIS_PORT" "Redis"
@@ -244,12 +244,12 @@ fi
 "$1" prepare --config "$prepare_config"
 
 # 4. 迁移失败不启动 HTTP；每次发布都检查应用模型，而非依赖临时根目录标记。
-if [ ! -f "plugins/shoply" ] || ! command -v php >/dev/null 2>&1; then
-    echo "[Shoply] ERROR: PHP CLI or plugins/shoply is missing" >&2
+if [ ! -f "plugins/shopark" ] || ! command -v php >/dev/null 2>&1; then
+    echo "[Shopark] ERROR: PHP CLI or plugins/shopark is missing" >&2
     exit 1
 fi
-echo "[Shoply] Syncing PHP plugin database tables..."
-(cd plugins && php shoply db:sync)
+echo "[Shopark] Syncing PHP plugin database tables..."
+(cd plugins && php shopark db:sync)
 
-echo "[Shoply] Starting application server..."
+echo "[Shopark] Starting application server..."
 exec "$@"

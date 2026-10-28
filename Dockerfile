@@ -1,5 +1,5 @@
 # ==========================================
-# Shoply 生产镜像（单文件构建，不再依赖外部 shoply-base 基础镜像）
+# Shopark 生产镜像（单文件构建，不再依赖外部 shopark-base 基础镜像）
 # 运行环境与代码同仓定版；runtime 层只在本段变化时重建，其余时间命中构建缓存。
 # ==========================================
 ARG PHP_IMAGE=php:8.2-cli-alpine3.24
@@ -35,7 +35,7 @@ RUN set -eux; \
         | tr ',' '\n' | sort -u \
         | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
     )"; \
-    apk add --no-cache --virtual .shoply-phpext-rundeps $runDeps; \
+    apk add --no-cache --virtual .shopark-phpext-rundeps $runDeps; \
     apk del --no-network .build-deps; \
     rm -rf /tmp/pear ~/.pearrc /usr/local/lib/php/test /usr/local/lib/php/doc; \
     # purego (webp 动态加载) 产生 libc/libdl 动态链接，引入 gcompat 兼容层保证 Alpine 正常执行
@@ -71,12 +71,12 @@ RUN yarn install --production --non-interactive && \
 # 最终运行镜像
 # ==========================================
 FROM runtime
-ARG SHOPLY_BINARY=dist/shoply-linux-amd64
+ARG SHOPARK_BINARY=dist/shopark-linux-amd64
 
-WORKDIR /var/www/shoply
+WORKDIR /var/www/shopark
 
 # 1. 复制宿主机编译好的 Go 主程序并赋权
-COPY --chmod=755 ${SHOPLY_BINARY} ./shoply
+COPY --chmod=755 ${SHOPARK_BINARY} ./shopark
 
 # 2. 复制核心运行依赖与资产
 COPY --from=plugins /build ./plugins
@@ -96,11 +96,11 @@ COPY --chmod=755 scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.s
 
 # 4. 预创建运行态与挂载点目录，并备份内置应用插件与官方主题源码供宿主机挂载时自愈释放
 RUN mkdir -p data config runtime public/uploads && \
-    cp -r plugins/app /var/www/shoply/.builtin-plugins-app && \
-    cp -r template/themes /var/www/shoply/.builtin-template-themes
+    cp -r plugins/app /var/www/shopark/.builtin-plugins-app && \
+    cp -r template/themes /var/www/shopark/.builtin-template-themes
 
 EXPOSE 5490
 
 # 5. 入口与主程序启动
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["./shoply"]
+CMD ["./shopark"]
