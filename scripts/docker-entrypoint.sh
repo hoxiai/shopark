@@ -39,10 +39,10 @@ case "${1##*/}" in
     *) exec "$@" ;;
 esac
 
-# 0. 初始化必要目录；plugins/app 与 template/themes 通常是宿主机挂载：
+# 0. 初始化必要目录；plugins/app 与 themes 通常是宿主机挂载：
 #    - 若 data/system-release/current 存在高于镜像版本的在线更新包，优先自愈恢复（保证容器重启或重建后不还原）
 #    - 内置应用与官方主题缺失时释放，仅在镜像版本高于已安装版本时升级覆盖（保留在线热更的高版本与源码检出）。
-mkdir -p public/uploads data config runtime plugins/app template/themes
+mkdir -p public/uploads data config runtime plugins/app themes
 
 version_gt() {
     local v1="${1#v}"
@@ -151,7 +151,7 @@ sync_themes_from_dir() {
         src_theme="${src_theme%/}"
         [ -d "$src_theme" ] || continue
         local theme_name="${src_theme##*/}"
-        local theme_target="template/themes/$theme_name"
+        local theme_target="themes/$theme_name"
         local src_theme_ver
         src_theme_ver="$(theme_version "$src_theme")"
         if [ ! -f "$theme_target/theme-package.json" ]; then
@@ -190,7 +190,7 @@ if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shopa
         for sub in dist resource ai-decor scripts site \
             plugins/src plugins/common plugins/vendor plugins/composer.json plugins/composer.lock \
             plugins/shopark plugins/tcp-worker.php plugins/psr-worker.php \
-            template/common public/favicon.svg public/icon.svg public/logo.svg public/logo-inverse.svg; do
+            public/favicon.svg public/icon.svg public/logo.svg public/logo-inverse.svg; do
             if [ -d "$persisted_release_dir/$sub" ] || [ -f "$persisted_release_dir/$sub" ]; then
                 mkdir -p "$(dirname "./$sub")"
                 rm -rf "./$sub.next"
@@ -200,14 +200,14 @@ if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shopa
             fi
         done
         sync_apps_from_dir "$persisted_release_dir/plugins/app"
-        sync_themes_from_dir "$persisted_release_dir/template/themes"
+        sync_themes_from_dir "$persisted_release_dir/themes"
         # Commit the version last so an interrupted restore is retried at startup.
         cp "$persisted_release_dir/VERSION" "./VERSION"
     fi
 fi
 
 sync_apps_from_dir "/var/www/shopark/.builtin-plugins-app"
-sync_themes_from_dir "/var/www/shopark/.builtin-template-themes"
+sync_themes_from_dir "/var/www/shopark/.builtin-themes"
 
 # 等待 TCP 端口就绪工具函数
 wait_for_port() {

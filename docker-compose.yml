@@ -42,6 +42,7 @@ services:
       - ./runtime:/var/www/shopark/runtime:Z
       - ./public/uploads:/var/www/shopark/public/uploads:Z
       - ./plugins/app:/var/www/shopark/plugins/app:Z
+      - ./themes:/var/www/shopark/themes:Z
 
   mysql:
     profiles: ["mysql"]

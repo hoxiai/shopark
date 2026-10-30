@@ -181,7 +181,7 @@ check_assets() {
     if [ -f "shopark" ] || [ -f "shopark-linux-amd64" ] || [ -f "dist/shopark-linux-amd64" ] || [ -f "../dist/shopark-linux-amd64" ]; then
         has_bin=1
     fi
-    if [ -d "plugins" ] && [ -d "public" ] && [ -d "template" ] && [ -d "resource" ]; then
+    if [ -d "plugins" ] && [ -d "public" ] && [ -d "themes" ] && [ -d "resource" ]; then
         has_dirs=1
     fi
 
@@ -190,7 +190,7 @@ check_assets() {
         return 0
     fi
 
-    echo "[Shopark] 提示: 当前目录缺少完整的运行资产包 (shopark, plugins, public, template, resource)。"
+    echo "[Shopark] 提示: 当前目录缺少完整的运行资产包 (shopark, plugins, public, themes, resource)。"
 
     # 步骤 4.2：检查本地是否存在已有的 tarball
     local TARBALL=""
@@ -265,7 +265,7 @@ check_assets() {
     # 步骤 4.4：若自动下载与本地解压均未能就绪，输出友好帮助信息
     echo ""
     echo "======================================================================"
-    echo "错误: 未能获取到运行资产包 (shopark, plugins, public, template, resource)。"
+    echo "错误: 未能获取到运行资产包 (shopark, plugins, public, themes, resource)。"
     echo ""
     echo "这通常是因为目标版本尚未发布 Release 附件，或当前处于离线/无网络环境。"
     echo "您可以选择以下任一方式运行或构建:"

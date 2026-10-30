@@ -21,11 +21,11 @@
 plugins/app/*
 !plugins/app/.gitkeep
 
-template/themes/*
-!template/themes/default/
-!template/themes/default/**
-template/themes/**/md/
-template/themes/**/md/**
+themes/*
+!themes/default/
+!themes/default/**
+themes/**/md/
+themes/**/md/**
 
 # 归档中的 vendor 已按 composer.lock 去掉开发依赖，不要再按目录删包（autoload 会引用失败）
 plugins/vendor/**/.git

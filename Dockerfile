@@ -81,7 +81,7 @@ COPY --chmod=755 ${SHOPARK_BINARY} ./shopark
 # 2. 复制核心运行依赖与资产
 COPY --from=plugins /build ./plugins
 COPY resource ./resource
-COPY template ./template
+COPY themes ./themes
 COPY dist/admin ./dist/admin
 COPY dist/site ./dist/site
 COPY public ./public
@@ -97,7 +97,7 @@ COPY --chmod=755 scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.s
 # 4. 预创建运行态与挂载点目录，并备份内置应用插件与官方主题源码供宿主机挂载时自愈释放
 RUN mkdir -p data config runtime public/uploads && \
     cp -r plugins/app /var/www/shopark/.builtin-plugins-app && \
-    cp -r template/themes /var/www/shopark/.builtin-template-themes
+    cp -r themes /var/www/shopark/.builtin-themes
 
 EXPOSE 5490
 

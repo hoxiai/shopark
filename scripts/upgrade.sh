@@ -340,7 +340,7 @@ do_rollback() {
             cp -f "$backup_dir/shopark-prepare" ./shopark-prepare
             chmod +x ./shopark-prepare
         fi
-        for dir in plugins resource template; do
+        for dir in plugins resource themes; do
             if [ -d "$backup_dir/$dir" ]; then
                 rm -rf "$dir"
                 cp -rf "$backup_dir/$dir" ./
@@ -433,7 +433,7 @@ else
     if [ -f "shopark-prepare" ]; then
         cp shopark-prepare "$BACKUP_DIR/shopark-prepare"
     fi
-    for dir in plugins resource template; do
+    for dir in plugins resource themes; do
         if [ -d "$dir" ]; then
             cp -r "$dir" "$BACKUP_DIR/$dir"
         fi
@@ -508,7 +508,7 @@ if [ "$MODE" = "container" ]; then
     fi
 
     # 4. 预先创建挂载目录并平滑更新拉起容器（entrypoint 自动运行 shopark prepare 和 PHP 迁移）
-    mkdir -p data config public/uploads runtime data/theme-releases plugins/app
+    mkdir -p data config public/uploads runtime data/theme-releases plugins/app themes
     log_info "正在平滑重建并启动 Shopark 应用容器..."
     $COMPOSE_CMD $PROFILE_ARGS up -d --force-recreate shopark
 
@@ -617,7 +617,7 @@ else
     fi
 
     # 保护性同步目录 (排除敏感与数据文件)
-    for dir in plugins resource template; do
+    for dir in plugins resource themes; do
         if [ -d "$TEMP_DIR/$dir" ]; then
             rsync -a --delete \
                 --exclude="app" \
