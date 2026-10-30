@@ -325,6 +325,7 @@ $ENGINE build \
     --platform "$PLATFORM" \
     --build-arg APK_MIRROR="$APK_MIRROR" \
     --build-arg SHOPARK_BINARY="$SHOPARK_BIN" \
+    --build-arg SHOPARK_VERSION="$VERSION" \
     "${LEGACY_PREPARE_ARGS[@]}" \
     -t "${IMAGE_NAME}:${VERSION}" \
     -t "${IMAGE_NAME}:latest" \

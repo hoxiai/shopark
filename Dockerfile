@@ -17,6 +17,8 @@ ARG APK_MIRROR=
 # 与 plugins/composer.lock 中 google/protobuf 的大版本、小版本保持一致
 ARG PROTOBUF_VERSION=4.33.6
 
+COPY scripts/docker/protobuf-4.33.6.tgz /tmp/protobuf.tgz
+
 RUN set -eux; \
     if [ -n "$APK_MIRROR" ]; then \
         sed -i -E "s#https?://dl-cdn.alpinelinux.org#${APK_MIRROR%/}#g" /etc/apk/repositories; \
@@ -27,7 +29,12 @@ RUN set -eux; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
     docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" \
         bcmath gd intl opcache pcntl pdo_mysql pdo_pgsql sockets zip; \
-    pecl install "protobuf-${PROTOBUF_VERSION}"; \
+    if [ -f /tmp/protobuf.tgz ]; then \
+        pecl install /tmp/protobuf.tgz; \
+        rm -f /tmp/protobuf.tgz; \
+    else \
+        pecl install "protobuf-${PROTOBUF_VERSION}"; \
+    fi; \
     docker-php-ext-enable protobuf; \
     # 只保留扩展实际链接的共享库，与官方 PHP 镜像的做法一致
     runDeps="$( \
@@ -72,11 +79,13 @@ RUN yarn install --production --non-interactive && \
 # ==========================================
 FROM runtime
 ARG SHOPARK_BINARY=dist/shopark-linux-amd64
+ARG SHOPARK_VERSION=v2.0.0
 
 WORKDIR /var/www/shopark
 
 # 1. 复制宿主机编译好的 Go 主程序并赋权
 COPY --chmod=755 ${SHOPARK_BINARY} ./shopark
+RUN printf '%s\n' "${SHOPARK_VERSION}" > /var/www/shopark/VERSION
 
 # 2. 复制核心运行依赖与资产
 COPY --from=plugins /build ./plugins
@@ -87,7 +96,7 @@ COPY dist/site ./dist/site
 COPY public ./public
 COPY --from=theme-builder /build ./site
 COPY scripts/theme-builder/package.json ./scripts/theme-builder/package.json
-COPY scripts/build-ai-decor-theme.mjs ./scripts/build-ai-decor-theme.mjs
+COPY scripts/build-ai-decor-theme.mjs scripts/run-ai-launch.mjs ./scripts/
 COPY scripts/lib/resolve-ts.mjs scripts/lib/ai-decor-modules.mjs scripts/lib/theme-decor-files.mjs ./scripts/lib/
 COPY ai-decor/src ./ai-decor/src
 
