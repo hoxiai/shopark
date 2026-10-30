@@ -187,7 +187,7 @@ if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shopa
         cp "$persisted_release_dir/shopark" "./shopark.next"
         chmod 755 "./shopark.next"
         mv "./shopark.next" "./shopark"
-        for sub in dist resource ai-decor scripts site \
+        for sub in dist resource scripts \
             plugins/src plugins/common plugins/vendor plugins/composer.json plugins/composer.lock \
             plugins/shopark plugins/tcp-worker.php plugins/psr-worker.php \
             public/favicon.svg public/icon.svg public/logo.svg public/logo-inverse.svg; do
