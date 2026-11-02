@@ -81,7 +81,7 @@ RUN yarn install --production --non-interactive && \
 # ==========================================
 FROM runtime
 ARG SHOPARK_BINARY=dist/shopark-linux-amd64
-ARG SHOPARK_VERSION=v2.0.0
+ARG SHOPARK_VERSION=v1.0.0
 
 WORKDIR /var/www/shopark
 
