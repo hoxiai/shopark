@@ -42,7 +42,7 @@ esac
 # 0. 初始化必要目录；plugins/app 与 themes 通常是宿主机挂载：
 #    - 若 data/system-release/current 存在高于镜像版本的在线更新包，优先自愈恢复（保证容器重启或重建后不还原）
 #    - 内置应用与官方主题缺失时释放，仅在镜像版本高于已安装版本时升级覆盖（保留在线热更的高版本与源码检出）。
-mkdir -p public/uploads data config runtime plugins/app themes
+mkdir -p public/uploads data/geo config runtime plugins/app themes
 
 version_gt() {
     local v1="${1#v}"
@@ -205,6 +205,21 @@ if [ -f "$persisted_release_dir/VERSION" ] && [ -f "$persisted_release_dir/shopa
         cp "$persisted_release_dir/VERSION" "./VERSION"
     fi
 fi
+
+# 0.2 迁移并清理历史版本残留的 GeoLite2 / ip2region 大文件副本，统一收敛至宿主机挂载目录 data/geo
+for mmdb_name in GeoLite2-City.mmdb GeoLite2-ASN.mmdb; do
+    if [ ! -s "data/geo/$mmdb_name" ]; then
+        for legacy_src in "resource/data/$mmdb_name" "data/system-release/current/resource/data/$mmdb_name" "data/system-release/backup/resource/data/$mmdb_name"; do
+            if [ -s "$legacy_src" ]; then
+                cp "$legacy_src" "data/geo/$mmdb_name.tmp" && mv "data/geo/$mmdb_name.tmp" "data/geo/$mmdb_name"
+                break
+            fi
+        done
+    fi
+done
+rm -f resource/data/*.mmdb resource/data/*.xdb \
+      data/system-release/current/resource/data/*.mmdb data/system-release/current/resource/data/*.xdb \
+      data/system-release/backup/resource/data/*.mmdb data/system-release/backup/resource/data/*.xdb 2>/dev/null || true
 
 sync_apps_from_dir "/var/www/shopark/.builtin-plugins-app"
 sync_themes_from_dir "/var/www/shopark/.builtin-themes"

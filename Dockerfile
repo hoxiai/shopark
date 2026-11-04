@@ -104,7 +104,7 @@ COPY scripts/lib/resolve-ts.mjs scripts/lib/ai-decor-modules.mjs scripts/lib/the
 COPY --chmod=755 scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # 4. 预创建运行态与挂载点目录，并备份内置应用插件与官方主题源码供宿主机挂载时自愈释放
-RUN mkdir -p data config runtime public/uploads && \
+RUN mkdir -p data/geo config runtime public/uploads && \
     cp -r plugins/app /var/www/shopark/.builtin-plugins-app && \
     cp -r themes /var/www/shopark/.builtin-themes
 
