@@ -9,7 +9,7 @@ FROM ${COMPOSER_IMAGE} AS composer
 
 # ==========================================
 # 运行环境：PHP 扩展 + node（Site SSR）+ composer（构建期与运行时安装应用依赖）
-# Go 二进制为 CGO_ENABLED=0 静态编译，不需要 glibc 兼容层。
+# Go 二进制使用 CGO_ENABLED=0 编译，因 purego 动态加载依赖 libc/libdl，由下方 gcompat 提供兼容层。
 # ==========================================
 FROM ${PHP_IMAGE} AS runtime
 # 可选 apk 镜像源，如 https://mirrors.aliyun.com；留空使用官方源
