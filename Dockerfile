@@ -97,6 +97,7 @@ COPY dist/admin ./dist/admin
 COPY dist/site ./dist/site
 COPY public ./public
 COPY --from=theme-builder /build ./scripts/theme-builder
+RUN node -e 'const fs=require("fs");const host=JSON.parse(fs.readFileSync("/var/www/shopark/dist/site/server/theme-runtime.json","utf8")).vueVersion;const builder=JSON.parse(fs.readFileSync("/var/www/shopark/scripts/theme-builder/node_modules/vue/package.json","utf8")).version;if(!host||host!==builder){console.error("theme-builder vueVersion mismatch: host="+host+" builder="+builder);process.exit(1)}'
 COPY scripts/build-ai-decor-theme.mjs scripts/run-ai-launch.mjs ./scripts/
 COPY scripts/lib/resolve-ts.mjs scripts/lib/ai-decor-modules.mjs scripts/lib/theme-decor-files.mjs ./scripts/lib/
 
